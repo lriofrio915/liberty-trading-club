@@ -859,7 +859,7 @@ export default function Home() {
                   <td className="p-4 border border-gray-200">75%</td>
                   <td className="p-4 border border-gray-200">
                     <a
-                      href="https://operativa-junio.vercel.app/"
+                      href="https://estrategia-1.vercel.app/informes/junio-25"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 underline break-all hover:text-blue-800"
