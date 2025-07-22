@@ -3,9 +3,10 @@
 "use client"; // Marca este componente como un componente de cliente si necesita interactividad (como Chart.js)
 
 import { useEffect, useRef } from 'react';
-import Link from 'next/link';
 import Image from 'next/image'; // Importa el componente Image de Next.js
 import Chart from 'chart.js/auto'; // Importa Chart.js
+// Importar tipos específicos de Chart.js para un mejor tipado
+import { ChartConfiguration, TooltipItem } from 'chart.js';
 
 export default function InformeJunio25Page() {
   // Referencias a los elementos canvas para Chart.js
@@ -36,13 +37,16 @@ export default function InformeJunio25Page() {
     }
 
     // Callback para tooltips de Chart.js
-    const tooltipTitleCallback = function (tooltipItems: any): string | string[] {
+    // Corrección 1: Tipado específico para tooltipItems
+    const tooltipTitleCallback = function (tooltipItems: TooltipItem<'doughnut' | 'bar'>[]): string | string[] {
       const item = tooltipItems[0];
-      let label = item.chart.data.labels[item.dataIndex];
+      // Corrección 2: Cambiar 'let' a 'const'
+      const labels = item.chart.data.labels;
+      const label = labels ? labels[item.dataIndex] : '';
       if (Array.isArray(label)) {
         return label.join(' ');
       } else {
-        return label;
+        return label as string;
       }
     };
 
@@ -62,7 +66,8 @@ export default function InformeJunio25Page() {
       }]
     };
 
-    const winRateConfig: any = { // Usamos 'any' por la complejidad de tipos de Chart.js en TypeScript para ejemplos rápidos
+    // Corrección 3: Tipado específico para la configuración del gráfico
+    const winRateConfig: ChartConfiguration<'doughnut', number[], string> = {
       type: 'doughnut',
       data: winRateData,
       options: {
@@ -104,7 +109,16 @@ export default function InformeJunio25Page() {
 
     // Datos y configuración para el Bar Chart (Análisis de Rachas)
     const streaksData = {
-      labels: [wrapText('Racha Positiva Más Larga', 16), wrapText('Racha Negativa Más Larga', 16)],
+      labels: [
+        (() => {
+          const label = wrapText('Racha Positiva Más Larga', 16);
+          return Array.isArray(label) ? label.join(' ') : label;
+        })(),
+        (() => {
+          const label = wrapText('Racha Negativa Más Larga', 16);
+          return Array.isArray(label) ? label.join(' ') : label;
+        })()
+      ],
       datasets: [{
         label: 'Nº de Operaciones Consecutivas',
         data: [6, 1],
@@ -121,7 +135,8 @@ export default function InformeJunio25Page() {
       }]
     };
 
-    const streaksConfig: any = { // Usamos 'any' por la complejidad de tipos de Chart.js en TypeScript para ejemplos rápidos
+    // Corrección 4: Tipado específico para la configuración del gráfico
+    const streaksConfig: ChartConfiguration<'bar', number[], string> = {
       type: 'bar',
       data: streaksData,
       options: {
@@ -192,15 +207,15 @@ export default function InformeJunio25Page() {
       </header>
 
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-12">
-        <div className="kpi-card">
+        <div className="kpi-card text-center">
           <p className="text-xl font-semibold text-[#849E8F] mb-2">Total de Operaciones</p>
           <p className="text-6xl font-extrabold text-[#0A2342]">8</p>
         </div>
-        <div className="kpi-card border-t-4 border-[#2CA58D]">
+        <div className="kpi-card border-t-4 border-[#2CA58D] text-center">
           <p className="text-xl font-semibold text-[#849E8F] mb-2">Operaciones Ganadoras</p>
           <p className="text-6xl font-extrabold text-[#2CA58D]">6</p>
         </div>
-        <div className="kpi-card border-t-4 border-[#D9534F]">
+        <div className="kpi-card border-t-4 border-[#D9534F] text-center">
           <p className="text-xl font-semibold text-[#849E8F] mb-2">Operaciones Perdedoras</p>
           <p className="text-6xl font-extrabold text-[#D9534F]">2</p>
         </div>
@@ -224,7 +239,7 @@ export default function InformeJunio25Page() {
               <div className="text-3xl mr-4">1️⃣</div>
               <div>
                 <h3 className="font-bold">Análisis de Sentimiento</h3>
-                <p className="text-sm text-gray-600">Evaluamos Investing.com y las "7 Magníficas" para determinar la dirección del mercado.</p>
+                <p className="text-sm text-gray-600">Evaluamos Investing.com y las &quot;7 Magníficas&quot; para determinar la dirección del mercado.</p>
               </div>
             </div>
             <div className="flex justify-center flowchart-arrow">↓</div>
@@ -300,7 +315,7 @@ export default function InformeJunio25Page() {
         <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md flex flex-col justify-center">
           <h2 className="text-2xl font-bold mb-4 text-center">El Consejo del Operador</h2>
           <blockquote className="relative p-4 text-xl italic border-l-4 bg-neutral-100 text-neutral-600 border-neutral-500 quote">
-            <p className="mb-4">"Mantén claras y respeta al pie de la letra las reglas de tu plan. La verdadera ventaja competitiva reside en la ejecución impecable, inmune a las distracciones del ruido macroeconómico."</p>
+            <p className="mb-4">&quot;Mantén claras y respeta al pie de la letra las reglas de tu plan. La verdadera ventaja competitiva reside en la ejecución impecable, inmune a las distracciones del ruido macroeconómico.&quot;</p>
             <cite className="flex items-center">
               <div className="flex flex-col items-start">
                 <span className="mb-1 text-sm not-italic font-bold">Luis Riofrío, Operador</span>
@@ -408,7 +423,8 @@ export default function InformeJunio25Page() {
 
         <div className="lg:col-span-2 bg-transparent rounded-lg">
           <h2 className="text-3xl font-bold mb-6 text-center text-[#0A2342]">Contexto Macroeconómico de Junio</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {/* Añadimos mx-auto al contenedor de la cuadrícula para centrarla */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mx-auto max-w-4xl"> {/* Ajusta max-w según necesites que tan ancha sea la sección centrada */}
             <div className="kpi-card p-4">
               <p className="text-5xl mb-2">🌍</p>
               <h3 className="font-bold text-lg mb-1">Tensiones Geopolíticas</h3>
