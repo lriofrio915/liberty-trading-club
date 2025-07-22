@@ -152,7 +152,7 @@ export default function Home() {
             <p className="mb-4 text-justify">
               Esta evaluación permite establecer una dirección operativa
               predominante para el día (alcista o bajista), alineando las
-              operaciones con el "flujo" general del mercado. Una vez definida
+              operaciones con el &quot;flujo&quot; general del mercado. Una vez definida
               esta dirección, la segunda etapa se centra en la identificación de
               patrones técnicos específicos en el gráfico de precios para
               determinar el momento óptimo de entrada.
