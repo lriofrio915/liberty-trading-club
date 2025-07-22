@@ -5,7 +5,7 @@
   --foreground: #171717;
 }
 
-@theme inline {
+:root {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -27,4 +27,24 @@ body {
 
 .font-times-new-roman {
   font-family: 'Times New Roman', serif;
+}
+
+.kpi-card {
+    background-color: #FFFFFF; /* Base Tarjeta: Blanco */
+    border-radius: 0.75rem; /* rounded-lg */
+    padding: 1.5rem; /* p-6 */
+    text-align: center; /* text-center */
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+}
+
+.flowchart-arrow {
+    color: #849E8F; /* Verde Apagado */
+    font-size: 2rem;
+    line-height: 1;
 }
