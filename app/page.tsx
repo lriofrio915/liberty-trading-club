@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export const metadata = {
   title: "Estrategia de Trading Intradía para Futuros Micro E-mini Nasdaq 100",
@@ -181,7 +182,7 @@ export default function Home() {
                   Resultados Corporativos:
                 </strong>
                 Los informes de ganancias de las principales empresas
-                tecnológicas (las &quot;7 Magníficas&quot; y otras) influyen
+                tecnológicas (las "7 Magníficas" y otras) influyen
                 directamente en el sentimiento del sector.
               </li>
             </ul>
@@ -214,7 +215,7 @@ export default function Home() {
               </li>
               <li className="mb-2">
                 <strong className="font-semibold">Indicador ZigZag:</strong>
-                Herramienta que filtra el &quot;ruido&quot; del precio,
+                Herramienta que filtra el "ruido" del precio,
                 conectando picos y valles significativos.
               </li>
               <li className="mb-2">
@@ -503,7 +504,7 @@ export default function Home() {
                   Cuantificación de Factores Macroeconómicos:
                 </strong>
                 Desarrollar un sistema más objetivo y automatizado o un índice para cuantificar
-                el &quot;sentimiento macro&quot; y la dirección.
+                el "sentimiento macro" y la dirección.
               </li>
               <li className="mb-2">
                 <strong className="font-semibold">
@@ -535,6 +536,7 @@ export default function Home() {
               metodología robusta para fondos de inversión.
             </p>
           </div>
+          {/* Pie de página de la página 4 */}
           <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
             <span>Emporium Quality Funds</span>
             <span>Página 4</span>
@@ -792,14 +794,15 @@ export default function Home() {
                   <td className="p-4 border border-gray-200">Junio</td>
                   <td className="p-4 border border-gray-200">75%</td>
                   <td className="p-4 border border-gray-200">
-                    <a
-                      href="https://estrategia-1.vercel.app/informes/junio-25"
+                    {/* Reemplazado <a> por Link de Next.js */}
+                    <Link
+                      href="/informes/junio-25" // Ruta relativa al App Router
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 underline break-all hover:text-blue-800"
                     >
                       Ver Informe
-                    </a>
+                    </Link>
                   </td>
                 </tr>
                 <tr className="even:bg-gray-50">
