@@ -1,6 +1,5 @@
-import Image from "next/image"; // Importar Image para optimización de imágenes en Next.js
+import Image from "next/image";
 
-// Metadata para esta página (opcional, pero buena práctica en Next.js 13+)
 export const metadata = {
   title: "Estrategia de Trading Intradía para Futuros Micro E-mini Nasdaq 100",
   description: "Un Enfoque Integrado Macro-Técnico por Emporium Quality Funds",
@@ -9,25 +8,14 @@ export const metadata = {
 export default function Home() {
   return (
     <div className="flex flex-col items-center p-5 bg-gray-50 text-gray-700 min-h-screen">
-      {/* Contenedor principal del documento, equivalente a .document-container */}
       <div className="w-full max-w-4xl">
-        
-        {/* max-w-800px convertido a max-w-4xl (768px) o puedes usar un valor custom en tailwind.config.js */}
         {/* Page 1 */}
         <div className="bg-white rounded-lg shadow-xl mb-8 p-10 relative">
-          
-          {/* .page equivalente */}
           <div className="min-h-[calc(100vh-120px)]">
-            
-            {/* Equivalente a .page-content */}
-            {/* Cabecera superior izquierda */}
             <div className="text-gray-600 text-xs border-b border-gray-200 pb-1">
               EQF +20 años de experiencia en conjunto, (2025)
             </div>
-            {/* Logo y Encabezado de Empresa */}
             <div className="flex flex-col items-center mb-8">
-              
-              {/* .logo-container */}
               <div className="flex items-center space-x-2 mt-6 mb-4">
                 <span className="text-2xl font-bold text-gray-800">
                   Emporium Quality Funds
@@ -35,8 +23,6 @@ export default function Home() {
               </div>
               <div className="flex items-center space-x-6">
                 <div className="flex flex-col items-start font-times-new-roman text-lg leading-tight text-gray-700">
-                  
-                  {/* .header-text */}
                   <span>Innovación</span>
                   <span>Experiencia</span>
                   <span>Gestión</span>
@@ -45,7 +31,7 @@ export default function Home() {
                   <Image
                     src="https://i.ibb.co/20RsFG5H/emporium-logo-1.jpg"
                     alt="Logo Emporium"
-                    className="w-24 h-24 rounded-full object-cover border-2 border-blue-600 shadow-md" // .logo-image
+                    className="w-24 h-24 rounded-full object-cover border-2 border-blue-600 shadow-md"
                     width={100} // Ancho original de la imagen
                     height={100} // Alto original de la imagen
                   />
@@ -57,7 +43,6 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            {/* Título Principal */}
             <h1 className="text-3xl font-bold text-center text-gray-800 mb-4">
               Estrategia de Trading Intradía para Futuros Micro E-mini Nasdaq
               100:
@@ -65,7 +50,6 @@ export default function Home() {
             <h2 className="text-2xl font-semibold text-center text-gray-700 mb-8">
               Un Enfoque Integrado Macro-Técnico
             </h2>
-            {/* Autor y Fechas */}
             <div className="text-center">
               <p className="text-lg font-semibold">L. Riofrio</p>
               <p className="text-gray-700">
@@ -76,10 +60,7 @@ export default function Home() {
                 (Recibido: 09 Julio 2025; Aceptado: 11 Julio 2025)
               </p>
             </div>
-            {/* Resumen Ejecutivo */}
             <h3 className="text-2xl font-semibold text-gray-900 mt-6 mb-4 pb-2 border-b-2 border-gray-200">
-              
-              {/* .section-title */}
               Resumen Ejecutivo
             </h3>
             <p className="mb-4 text-justify">
@@ -99,13 +80,6 @@ export default function Home() {
               para su potencial implementación en un fondo de inversión.
             </p>
             <p className="mb-4 text-justify">
-              El análisis empírico, basado en principios de backtesting riguroso
-              y la importancia de pruebas en tiempo real, revela que, si bien la
-              estrategia posee reglas claras para su ejecución técnica, la
-              dependencia de elementos cualitativos del análisis macroeconómico
-              introduce desafíos significativos para su replicabilidad estricta.
-            </p>
-            <p className="mb-4 text-justify">
               La gestión de riesgos, anclada en la regla del 2% y stops de
               pérdida fijos, es fundamental para la preservación del capital. Se
               identifican áreas clave para la optimización y la investigación
@@ -113,7 +87,6 @@ export default function Home() {
               sentimiento macroeconómico y la adaptación dinámica de los
               parámetros de riesgo a las condiciones del mercado.
             </p>
-            {/* 1. Introducción */}
             <h3 className="text-2xl font-semibold text-gray-900 mt-6 mb-4 pb-2 border-b-2 border-gray-200">
               1. Introducción
             </h3>
@@ -138,10 +111,7 @@ export default function Home() {
               índice Nasdaq.
             </p>
           </div>
-          {/* Pie de página de la página 1 */}
           <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
-            
-            {/* .page-footer */}
             <span>Emporium Quality Funds</span>
             <span>Página 1</span>
           </div>
@@ -152,7 +122,7 @@ export default function Home() {
             <p className="mb-4 text-justify">
               Esta evaluación permite establecer una dirección operativa
               predominante para el día (alcista o bajista), alineando las
-              operaciones con el &quot;flujo&quot; general del mercado. Una vez definida
+              operaciones con el flujo general del mercado. Una vez definida
               esta dirección, la segunda etapa se centra en la identificación de
               patrones técnicos específicos en el gráfico de precios para
               determinar el momento óptimo de entrada.
@@ -163,14 +133,10 @@ export default function Home() {
               capacidad de ser replicada por otros operadores y la facilidad con
               la que puede ser enseñada.
             </p>
-
-            {/* 2. Marco Teórico */}
             <h3 className="text-2xl font-semibold text-gray-900 mt-6 mb-4 pb-2 border-b-2 border-gray-200">
               2. Marco Teórico
             </h3>
             <h4 className="text-xl font-semibold text-gray-800 mt-5 mb-3">
-              
-              {/* .subsection-title */}
               2.1. Análisis Macroeconómico Fundamental para el Nasdaq
             </h4>
             <p className="mb-4 text-justify">
@@ -180,7 +146,6 @@ export default function Home() {
               Nasdaq, al ser un índice predominantemente tecnológico, es
               particularmente sensible a:
             </p>
-
             <ul className="list-disc ml-6 mb-4">
               <li className="mb-2">
                 <strong className="font-semibold">Tasas de Interés:</strong> Las
@@ -220,15 +185,14 @@ export default function Home() {
                 directamente en el sentimiento del sector.
               </li>
             </ul>
-
             <Image
               src="https://i.ibb.co/xSv60TXG/var.jpg"
               alt="Variables macroeconómicas"
-              className="max-w-full h-auto mx-auto my-6 block rounded-md shadow-md" // .content-image
-              width={700} // Ajusta el ancho según sea necesario, Next.js lo optimizará
-              height={400} // Ajusta el alto según sea necesario
+              className="max-w-full h-auto mx-auto my-4 block rounded-md shadow-md" // .content-image
+              width={500} // Ajusta el ancho según sea necesario, Next.js lo optimizará
+              height={200} // Ajusta el alto según sea necesario
             />
-
+            <h3 className="text-xs text-center">Gráfico 1. Variables Fundamentales para la Determinarción del Sesgo General del Mercado</h3>
             <h4 className="text-xl font-semibold text-gray-800 mt-5 mb-3">
               2.2. Análisis Técnico de Rupturas (Breakouts)
             </h4>
@@ -259,15 +223,14 @@ export default function Home() {
                 nivel de resistencia o por debajo de un nivel de soporte.
               </li>
             </ul>
-
             <Image
               src="https://i.ibb.co/W4Dvky7t/soporte-resistencia.jpg"
               alt="Soporte y resistencia"
-              className="max-w-full h-auto mx-auto my-6 block rounded-md shadow-md"
+              className="max-w-full h-auto mx-auto my-4 block rounded-md shadow-md"
               width={700}
               height={400}
             />
-
+            <h3 className="text-xs text-center mb-4">Gráfico 2. Componentes Técnicos de la Estrategia</h3>
             <p className="mb-4 text-justify">
               Las rupturas son consideradas señales potentes de continuación o
               reversión de tendencia, proporcionando puntos de entrada de alta
@@ -275,7 +238,6 @@ export default function Home() {
               previamente determinada.
             </p>
           </div>
-          {/* Pie de página de la página 2 */}
           <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
             <span>Emporium Quality Funds</span>
             <span>Página 2</span>
@@ -291,7 +253,6 @@ export default function Home() {
               La implementación de esta estrategia integrada se divide en dos
               etapas secuenciales y complementarias:
             </p>
-
             <h4 className="text-xl font-semibold text-gray-800 mt-5 mb-3">
               3.1. Etapa 1: Determinación de la Dirección Macroeconómica Diaria
             </h4>
@@ -300,7 +261,6 @@ export default function Home() {
               primeros minutos de la sesión, y es crucial para establecer el
               sesgo operativo del día. El proceso incluye:
             </p>
-
             <ol className="list-decimal ml-6 mb-4">
               <li className="mb-2">
                 <strong className="font-semibold">
@@ -349,25 +309,23 @@ export default function Home() {
                 </ul>
               </li>
             </ol>
-
             <Image
               src="https://i.ibb.co/DH5tMZBV/matriz-macroeconomica-fundamenta.jpg"
               alt="Matriz macroeconómica"
-              className="max-w-full h-auto mx-auto my-6 block rounded-md shadow-md"
+              className="max-w-full h-auto mx-auto my-4 block rounded-md shadow-md"
               width={700}
               height={400}
             />
-
+            <h3 className="text-xs text-center mb-4">Gráfico 3. Cuantificación de los Componentes Fundamentales</h3>
             <p className="mb-4 text-justify">
               Si el valor actual del dato supera las previsiones y aporta al
               desarrollo de la economía se le asigna una puntuación de +1, caso
               contrario si el dato decepciona y es malo para la economía le
-              asignamos una valor de -1. Si la sumatoria final está entre +4 y
+              asignamos un valor de -1. Si la sumatoria final está entre +4 y
               +12 es una tendencia alcista, si se encuentra entre -12 y -4 el
               sesgo es bajista, sin embargo si se encuentra entre -3 y +3 es una
               tendencia lateral con indecisiones en donde es mejor no operar.
             </p>
-
             <h4 className="text-xl font-semibold text-gray-800 mt-5 mb-3">
               3.2. Etapa 2: Aplicación del Patrón Técnico para el Timing de
               Entrada
@@ -377,7 +335,6 @@ export default function Home() {
               operador se enfoca en el gráfico del MNQ para identificar el
               patrón de entrada adecuado:
             </p>
-
             <ol className="list-decimal ml-6 mb-4">
               <li className="mb-2">
                 <strong className="font-semibold">
@@ -410,13 +367,10 @@ export default function Home() {
               <li className="mb-2">
                 <strong className="font-semibold">Timing de Entrada:</strong> La
                 entrada se realiza inmediatamente después de la confirmación de
-                la ruptura.
+                la ruptura mediante la colocación de una orden Buy o Sell Stop.
               </li>
             </ol>
-
             <p className="text-center font-semibold text-xl my-6 text-gray-900">
-              
-              {/* .centered-heading */}
               Entrada de Compra
             </p>
             <Image
@@ -426,7 +380,6 @@ export default function Home() {
               width={700}
               height={400}
             />
-
             <p className="text-center font-semibold text-xl my-6 text-gray-900">
               Entrada de Venta
             </p>
@@ -437,7 +390,6 @@ export default function Home() {
               width={700}
               height={400}
             />
-
             <h4 className="text-xl font-semibold text-gray-800 mt-5 mb-3">
               3.3. Gestión de Riesgos
             </h4>
@@ -454,16 +406,15 @@ export default function Home() {
               </li>
               <li className="mb-2">
                 <strong className="font-semibold">Stop-Loss Fijo:</strong> Se
-                establece un stop-loss predefinido y fijo para cada operación.
+                establece un stop-loss predefinido (detrás del previo pivote) y fijo para cada operación.
               </li>
               <li className="mb-2">
-                <strong className="font-semibold">Take Profit:</strong> Los
-                objetivos de ganancias se establecen en niveles basados en una
+                <strong className="font-semibold">Take Profit:</strong> El
+                objetivo de ganancia se establece en niveles basados en una
                 relación riesgo-recompensa 1:1.
               </li>
             </ul>
           </div>
-          {/* Pie de página de la página 3 */}
           <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
             <span>Emporium Quality Funds</span>
             <span>Página 3</span>
@@ -478,14 +429,7 @@ export default function Home() {
             <p className="mb-4 text-justify">
               La validación de esta estrategia se ha realizado a través de un
               riguroso backtesting sobre datos históricos del MNQ, complementado
-              con pruebas en tiempo real. Si bien el backtesting proporciona una
-              base sólida para evaluar la efectividad de los patrones técnicos,
-              la naturaleza cualitativa de la primera etapa (análisis
-              macroeconómico) introduce desafíos significativos para su
-              replicabilidad estricta.
-            </p>
-            <p className="mb-4 text-justify">
-              Se ha observado que los días con una dirección macroeconómica
+              con pruebas en tiempo real. Se ha observado que los días con una dirección macroeconómica
               clara y un fuerte catalizador tienden a producir las operaciones
               más exitosas, mientras que los días de incertidumbre
               macroeconómica o consolidación pueden generar señales falsas o un
@@ -558,7 +502,7 @@ export default function Home() {
                 <strong className="font-semibold">
                   Cuantificación de Factores Macroeconómicos:
                 </strong>
-                Desarrollar un sistema más objetivo o un índice para cuantificar
+                Desarrollar un sistema más objetivo y automatizado o un índice para cuantificar
                 el &quot;sentimiento macro&quot; y la dirección.
               </li>
               <li className="mb-2">
@@ -591,7 +535,6 @@ export default function Home() {
               metodología robusta para fondos de inversión.
             </p>
           </div>
-          {/* Pie de página de la página 4 */}
           <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
             <span>Emporium Quality Funds</span>
             <span>Página 4</span>
@@ -609,18 +552,17 @@ export default function Home() {
             </p>
 
             <h4 className="text-xl font-semibold text-gray-800 mt-5 mb-3">
-              (a) Compra 11-06-2025
+              (a) Compra 23-07-2025
             </h4>
             <Image
-              src="https://i.ibb.co/NnFMfcTn/11.png"
+              src="https://i.ibb.co/216gJ8Jd/mnq-x.jpg"
               alt="Operación ganadora de compra"
-              className="max-w-full h-auto mx-auto my-6 block rounded-md shadow-md"
+              className="max-w-full h-auto mx-auto my-4 block rounded-md shadow-md"
               width={700}
               height={400}
             />
-            <p className="mb-4 text-justify">
-              Descripción: El primer target es conseguido exitosamente, el
-              segundo objetivo cierra en breakeven por gestión del stop.
+            <p className="mb-4 text-xs text-center">
+              Descripción: El precio cumple con el patrón de entrada y se dirige directo al target.
             </p>
 
             <h4 className="text-xl font-semibold text-gray-800 mt-5 mb-3">
@@ -629,12 +571,12 @@ export default function Home() {
             <Image
               src="https://i.ibb.co/JWy9YhdM/sell-profit.png"
               alt="Operación ganadora de venta"
-              className="max-w-full h-auto mx-auto my-6 block rounded-md shadow-md"
+              className="max-w-full h-auto mx-auto my-4 block rounded-md shadow-md"
               width={700}
               height={400}
             />
-            <p className="mb-4 text-justify">
-              Descripción: El target es conseguido exitosamente.
+            <p className="mb-4 text-center text-xs">
+              Descripción: El precio cumple con el patrón de entrada y target es conseguido exitosamente.
             </p>
 
             <h3 className="text-2xl font-semibold text-gray-900 mt-6 mb-4 pb-2 border-b-2 border-gray-200">
@@ -651,31 +593,29 @@ export default function Home() {
             <Image
               src="https://i.ibb.co/RkRf7thB/25.png"
               alt="Operación perdedora de compra"
-              className="max-w-full h-auto mx-auto my-6 block rounded-md shadow-md"
+              className="max-w-full h-auto mx-auto my-4 block rounded-md shadow-md"
               width={700}
               height={400}
             />
-            <p className="mb-4 text-justify">
+            <p className="mb-4 text-center text-xs">
               Descripción: El precio no se desarrolla a favor de la compra y cae
               directamente hacia el stop.
             </p>
-
             <h4 className="text-xl font-semibold text-gray-800 mt-5 mb-3">
               (b) Venta 08-07-25
             </h4>
             <Image
               src="https://i.ibb.co/FdkXQw2/sell-stop.png"
               alt="Operación perdedora de venta"
-              className="max-w-full h-auto mx-auto my-6 block rounded-md shadow-md"
+              className="max-w-full h-auto mx-auto my-4 block rounded-md shadow-md"
               width={700}
               height={400}
             />
-            <p className="mb-4 text-justify">
+            <p className="mb-4 text-center text-xs">
               Descripción: El precio no se desarrolla a favor de la venta y sube
               directamente hacia el stop.
             </p>
           </div>
-          {/* Pie de página de la página 5 */}
           <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
             <span>Emporium Quality Funds</span>
             <span>Página 5</span>
@@ -688,10 +628,8 @@ export default function Home() {
               Apéndice 3. Métricas Clave del Backtesting
             </h3>
             <table className="w-full border-collapse my-6 text-base">
-              
-              {/* .data-table */}
-              <caption className="font-semibold text-xl text-center mb-4 text-gray-900">
-                Tabla de Métricas Clave
+              <caption className="text-center font-bold text-lg mb-4 text-gray-900">
+                Tabla 1. Métricas Clave de Estudio
               </caption>
               <thead>
                 <tr>
@@ -708,15 +646,12 @@ export default function Home() {
               </thead>
               <tbody>
                 <tr className="even:bg-gray-50">
-                  
-                  {/* .data-table tr:nth-child(even) */}
                   <td className="p-4 border border-gray-200">
                     Beneficio Neto Total
                   </td>
                   <td className="p-4 border border-gray-200 font-semibold text-blue-700">
                     -
                   </td>
-                  {/* .metric-highlight */}
                   <td className="p-4 border border-gray-200">-</td>
                 </tr>
                 <tr className="even:bg-gray-50">
@@ -791,12 +726,11 @@ export default function Home() {
                 </tr>
               </tbody>
             </table>
-
             <h3 className="text-2xl font-semibold text-gray-900 mt-6 mb-4 pb-2 border-b-2 border-gray-200">
               Apéndice 4. Informes Operativos
             </h3>
             <p className="mb-4 text-justify">
-              Esta sección contendría los informes detallados de todas las
+              Esta sección contiene los informes detallados de todas las
               operaciones realizadas durante el período de estudio, incluyendo
               fechas, activos, dirección, puntos de entrada y salida, stop-loss,
               take profit, y resultado final (ganancia/pérdida).
@@ -804,7 +738,7 @@ export default function Home() {
 
             <table className="w-full border-collapse my-6 text-base">
               <caption className="text-center font-bold text-lg mb-4 text-gray-900">
-                Tabla 1. Informes Mensuales de la Estrategia 2025
+                Tabla 2. Informes Mensuales de la Estrategia 2025
               </caption>
               <thead>
                 <tr>
@@ -864,7 +798,7 @@ export default function Home() {
                       rel="noopener noreferrer"
                       className="text-blue-600 underline break-all hover:text-blue-800"
                     >
-                      https://operativa-junio.vercel.app/
+                      Ver Informe
                     </a>
                   </td>
                 </tr>
