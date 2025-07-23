@@ -1,11 +1,8 @@
-// app/informes/junio-25/page.tsx
-
-"use client"; // Marca este componente como un componente de cliente si necesita interactividad (como Chart.js)
+"use client"; 
 
 import { useEffect, useRef } from 'react';
-import Image from 'next/image'; // Importa el componente Image de Next.js
-import Chart from 'chart.js/auto'; // Importa Chart.js
-// Importar tipos específicos de Chart.js para un mejor tipado
+import Image from 'next/image'; 
+import Chart from 'chart.js/auto'; 
 import { ChartConfiguration, TooltipItem } from 'chart.js';
 
 export default function InformeJunio25Page() {
@@ -37,10 +34,8 @@ export default function InformeJunio25Page() {
     }
 
     // Callback para tooltips de Chart.js
-    // Corrección 1: Tipado específico para tooltipItems
     const tooltipTitleCallback = function (tooltipItems: TooltipItem<'doughnut' | 'bar'>[]): string | string[] {
       const item = tooltipItems[0];
-      // Corrección 2: Cambiar 'let' a 'const'
       const labels = item.chart.data.labels;
       const label = labels ? labels[item.dataIndex] : '';
       if (Array.isArray(label)) {
@@ -50,23 +45,20 @@ export default function InformeJunio25Page() {
       }
     };
 
-    // Datos y configuración para el Donut Chart (Tasa de Éxito)
     const winRateData = {
       labels: ['Ganadoras', 'Perdedoras'],
       datasets: [{
         label: 'Resultado de Operaciones',
         data: [6, 2],
         backgroundColor: [
-          '#2CA58D', // Acento Positivo/Ganancia
-          '#D9534F'  // Acento Negativo/Pérdida
+          '#2CA58D', 
+          '#D9534F' 
         ],
         borderColor: '#FFFFFF',
         borderWidth: 4,
         hoverOffset: 8
       }]
     };
-
-    // Corrección 3: Tipado específico para la configuración del gráfico
     const winRateConfig: ChartConfiguration<'doughnut', number[], string> = {
       type: 'doughnut',
       data: winRateData,
@@ -81,7 +73,7 @@ export default function InformeJunio25Page() {
                 size: 14,
                 family: 'Inter'
               },
-              color: '#0A2342' // Texto Principal/Oscuro
+              color: '#0A2342'
             }
           },
           tooltip: {
@@ -123,8 +115,8 @@ export default function InformeJunio25Page() {
         label: 'Nº de Operaciones Consecutivas',
         data: [6, 1],
         backgroundColor: [
-          'rgba(44, 165, 141, 0.7)', // Acento Positivo/Ganancia con transparencia
-          'rgba(217, 83, 79, 0.7)'    // Acento Negativo/Pérdida con transparencia
+          'rgba(44, 165, 141, 0.7)', 
+          'rgba(217, 83, 79, 0.7)'    
         ],
         borderColor: [
           '#2CA58D',
@@ -135,12 +127,11 @@ export default function InformeJunio25Page() {
       }]
     };
 
-    // Corrección 4: Tipado específico para la configuración del gráfico
     const streaksConfig: ChartConfiguration<'bar', number[], string> = {
       type: 'bar',
       data: streaksData,
       options: {
-        indexAxis: 'y', // Hace el gráfico de barras horizontal
+        indexAxis: 'y', 
         responsive: true,
         maintainAspectRatio: false,
         scales: {
@@ -226,7 +217,6 @@ export default function InformeJunio25Page() {
           <h2 className="text-2xl font-bold mb-4 text-center">Resumen del Desempeño</h2>
           <p className="text-center text-gray-600 mb-6">Visualización de la proporción de operaciones ganadoras (TARGET) frente a las perdedoras (STOP) durante el mes de junio.</p>
           <div className="chart-container">
-            {/* Asigna la referencia al canvas */}
             <canvas id="winRateChart" ref={winRateChartRef}></canvas>
           </div>
         </div>
@@ -267,12 +257,10 @@ export default function InformeJunio25Page() {
           <div className="relative">
             <div className="absolute left-1/2 top-0 h-full w-0.5 bg-gray-200"></div>
             <div className="space-y-8">
-              {/* Timeline Items */}
               <div className="relative flex items-center">
                 <div className="w-1/2 pr-8 text-right">
                   <p className="font-bold">Lunes 02-06</p>
                 </div>
-                {/* Asegúrate de que los contenidos como emojis no causen problemas */}
                 <div className="absolute left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-[#D9534F] border-4 border-white flex items-center justify-center text-white font-bold">🚫</div>
                 <div className="w-1/2 pl-8">
                   <p className="font-bold text-lg text-[#D9534F]">STOP</p>
@@ -307,7 +295,6 @@ export default function InformeJunio25Page() {
           <h2 className="text-2xl font-bold mb-4 text-center">Análisis de Rachas</h2>
           <p className="text-center text-gray-600 mb-6">Una comparación visual de la racha de ganancias más larga frente a la de pérdidas, demostrando una gestión de riesgo efectiva.</p>
           <div className="chart-container">
-            {/* Asigna la referencia al canvas */}
             <canvas id="streaksChart" ref={streaksChartRef}></canvas>
           </div>
         </div>
@@ -328,16 +315,15 @@ export default function InformeJunio25Page() {
           <h2 className="text-2xl font-bold mb-6 text-center">Anexo Fotográfico: Operaciones del Mes</h2>
           <p className="text-center text-gray-600 mb-8">Las imágenes ilustran todas y cada una de las operaciones ejecutadas durante junio, mostrando la disciplina en la aplicación de nuestra estrategia.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Ejemplo de Imagen de Operación usando Next.js Image Component */}
             <div>
               <h3 className="font-bold text-lg mb-2">Lunes 02-06: NASDAQ Futures (NQ) - STOP</h3>
               <Image
                 src="https://i.ibb.co/mFtbR1hP/02.jpg"
                 alt="Captura de pantalla de la operación de NASDAQ del 02 de junio, resultado STOP"
-                width={800} // <<< Reemplaza con el ancho real de 02.jpg
-                height={600} // <<< Reemplaza con el alto real de 02.jpg
+                width={800} 
+                height={600}
                 className="w-full h-auto rounded-lg shadow-md mb-4"
-                priority // Carga esta imagen con alta prioridad si es importante en el viewport inicial
+                priority 
               />
               <p className="text-sm text-gray-600">Descripción: La continuación del rompimiento no sucede inmediatamente, retrocede hacia el stop.</p>
             </div>
@@ -346,8 +332,8 @@ export default function InformeJunio25Page() {
               <Image
                 src="https://i.ibb.co/VfV06v5/03.jpg"
                 alt="Captura de pantalla de la operación de NASDAQ del 03 de junio, resultado TARGET"
-                width={800} // <<< Reemplaza con el ancho real de 03.jpg
-                height={600} // <<< Reemplaza con el alto real de 03.jpg
+                width={800} 
+                height={600} 
                 className="w-full h-auto rounded-lg shadow-md mb-4"
               />
               <p className="text-sm text-gray-600">Descripción: El primer target es conseguido exitosamente, el segundo objetivo cierra en breakeven por gestión del stop.</p>
@@ -357,8 +343,8 @@ export default function InformeJunio25Page() {
               <Image
                 src="https://i.ibb.co/qM559P3Q/04.png"
                 alt="Captura de pantalla de la operación de NASDAQ del 04 de junio, resultado TARGET"
-                width={800} // <<< Reemplaza con el ancho real de 04.png
-                height={600} // <<< Reemplaza con el alto real de 04.png
+                width={800} 
+                height={600} 
                 className="w-full h-auto rounded-lg shadow-md mb-4"
               />
               <p className="text-sm text-gray-600">Descripción: El primer target es conseguido exitosamente, el segundo objetivo cierra en breakeven por gestión del stop.</p>
@@ -368,8 +354,8 @@ export default function InformeJunio25Page() {
               <Image
                 src="https://i.ibb.co/tPTHWG1x/09.png"
                 alt="Captura de pantalla de la operación de NASDAQ del 09 de junio, resultado TARGET"
-                width={800} // <<< Reemplaza con el ancho real de 09.png
-                height={600} // <<< Reemplaza con el alto real de 09.png
+                width={800} 
+                height={600} 
                 className="w-full h-auto rounded-lg shadow-md mb-4"
               />
               <p className="text-sm text-gray-600">Descripción: El primer target es conseguido exitosamente, el segundo objetivo cierra en relación 1:1 por gestión del stop.</p>
@@ -379,8 +365,8 @@ export default function InformeJunio25Page() {
               <Image
                 src="https://i.ibb.co/NnFMfcTn/11.png"
                 alt="Captura de pantalla de la operación de NASDAQ del 11 de junio, resultado TARGET"
-                width={800} // <<< Reemplaza con el ancho real de 11.png
-                height={600} // <<< Reemplaza con el alto real de 11.png
+                width={800} 
+                height={600} 
                 className="w-full h-auto rounded-lg shadow-md mb-4"
               />
               <p className="text-sm text-gray-600">Descripción: El primer target es conseguido exitosamente, el segundo objetivo cierra en breakeven por gestión del stop.</p>
@@ -390,8 +376,8 @@ export default function InformeJunio25Page() {
               <Image
                 src="https://i.ibb.co/0pxNRcb3/16.png"
                 alt="Captura de pantalla de la operación de NASDAQ del 16 de junio, resultado TARGET"
-                width={800} // <<< Reemplaza con el ancho real de 16.png
-                height={600} // <<< Reemplaza con el alto real de 16.png
+                width={800} 
+                height={600} 
                 className="w-full h-auto rounded-lg shadow-md mb-4"
               />
               <p className="text-sm text-gray-600">Descripción: El precio llega exitosamente al primer target pero cierro en breakeven porque en la apertura del trade se dio un deslizamiento y entré en un precio no deseado.</p>
@@ -401,8 +387,8 @@ export default function InformeJunio25Page() {
               <Image
                 src="https://i.ibb.co/G3d0SmTq/18.png"
                 alt="Captura de pantalla de la operación de NASDAQ del 18 de junio, resultado TARGET"
-                width={800} // <<< Reemplaza con el ancho real de 18.png
-                height={600} // <<< Reemplaza con el alto real de 18.png
+                width={800} 
+                height={600} 
                 className="w-full h-auto rounded-lg shadow-md mb-4"
               />
               <p className="text-sm text-gray-600">El primer target es conseguido exitosamente, el segundo objetivo cierra en breakeven por gestión del stop.</p>
@@ -412,8 +398,8 @@ export default function InformeJunio25Page() {
               <Image
                 src="https://i.ibb.co/RkRf7thB/25.png"
                 alt="Captura de pantalla de la operación de NASDAQ del 25 de junio, resultado STOP"
-                width={800} // <<< Reemplaza con el ancho real de 25.png
-                height={600} // <<< Reemplaza con el alto real de 25.png
+                width={800} 
+                height={600} 
                 className="w-full h-auto rounded-lg shadow-md mb-4"
               />
               <p className="text-sm text-gray-600">Descripción: El precio no se desarrolla a favor de la compra y cae directamente hacia el stop.</p>
@@ -423,8 +409,7 @@ export default function InformeJunio25Page() {
 
         <div className="lg:col-span-2 bg-transparent rounded-lg">
           <h2 className="text-3xl font-bold mb-6 text-center text-[#0A2342]">Contexto Macroeconómico de Junio</h2>
-          {/* Añadimos mx-auto al contenedor de la cuadrícula para centrarla */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mx-auto max-w-4xl"> {/* Ajusta max-w según necesites que tan ancha sea la sección centrada */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mx-auto max-w-4xl"> 
             <div className="kpi-card p-4">
               <p className="text-5xl mb-2">🌍</p>
               <h3 className="font-bold text-lg mb-1">Tensiones Geopolíticas</h3>

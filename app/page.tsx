@@ -33,8 +33,8 @@ export default function Home() {
                     src="https://i.ibb.co/20RsFG5H/emporium-logo-1.jpg"
                     alt="Logo Emporium"
                     className="w-24 h-24 rounded-full object-cover border-2 border-blue-600 shadow-md"
-                    width={100} // Ancho original de la imagen
-                    height={100} // Alto original de la imagen
+                    width={100}
+                    height={100} 
                   />
                 </div>
                 <div className="flex flex-col items-end">
@@ -182,16 +182,16 @@ export default function Home() {
                   Resultados Corporativos:
                 </strong>
                 Los informes de ganancias de las principales empresas
-                tecnológicas (las "7 Magníficas" y otras) influyen
+                tecnológicas (las &quot;7 Magníficas&quot; y otras) influyen
                 directamente en el sentimiento del sector.
               </li>
             </ul>
             <Image
               src="https://i.ibb.co/xSv60TXG/var.jpg"
               alt="Variables macroeconómicas"
-              className="max-w-full h-auto mx-auto my-4 block rounded-md shadow-md" // .content-image
-              width={500} // Ajusta el ancho según sea necesario, Next.js lo optimizará
-              height={200} // Ajusta el alto según sea necesario
+              className="max-w-full h-auto mx-auto my-4 block rounded-md shadow-md" 
+              width={500} 
+              height={200} 
             />
             <h3 className="text-xs text-center">Gráfico 1. Variables Fundamentales para la Determinarción del Sesgo General del Mercado</h3>
             <h4 className="text-xl font-semibold text-gray-800 mt-5 mb-3">
@@ -215,7 +215,7 @@ export default function Home() {
               </li>
               <li className="mb-2">
                 <strong className="font-semibold">Indicador ZigZag:</strong>
-                Herramienta que filtra el "ruido" del precio,
+                Herramienta que filtra el &quot;ruido&quot; del precio,
                 conectando picos y valles significativos.
               </li>
               <li className="mb-2">
@@ -504,7 +504,7 @@ export default function Home() {
                   Cuantificación de Factores Macroeconómicos:
                 </strong>
                 Desarrollar un sistema más objetivo y automatizado o un índice para cuantificar
-                el "sentimiento macro" y la dirección.
+                el &quot;sentimiento macro&quot; y la dirección.
               </li>
               <li className="mb-2">
                 <strong className="font-semibold">
@@ -794,7 +794,6 @@ export default function Home() {
                   <td className="p-4 border border-gray-200">Junio</td>
                   <td className="p-4 border border-gray-200">75%</td>
                   <td className="p-4 border border-gray-200">
-                    {/* Reemplazado <a> por Link de Next.js */}
                     <Link
                       href="/informes/junio-25" // Ruta relativa al App Router
                       target="_blank"

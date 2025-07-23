@@ -21,11 +21,7 @@ export default function Navbar() {
             height={50} 
             className="rounded-full mr-2" 
           />
-          {/*
-          <span className="text-2xl font-bold">Pulso Bursátil</span>
-          */}
         </Link>
-        {/* Botón de Hamburguesa para Móvil */}
         <div className="md:hidden">
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -51,8 +47,6 @@ export default function Navbar() {
           </Link>
         </div>
       </div>
-
-      {/* Menú Desplegable para Móvil */}
       <div
         className={`md:hidden ${isOpen ? 'block' : 'hidden'} mt-4 space-y-3 pb-2 px-2 transition-all duration-300 ease-in-out`}
       >

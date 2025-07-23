@@ -38,7 +38,6 @@ export default function InformesPage() {
         <h2 className="text-3xl font-bold text-center text-[#0A2342] mb-6">
           Informes de Desempeño 2025
         </h2>
-        {/* Futuro selector de año (simple placeholder por ahora) */}
         <div className="flex justify-center mb-8 space-x-4">
           <button className="px-6 py-2 bg-[#2CA58D] text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-colors duration-200">
             2025
@@ -46,10 +45,9 @@ export default function InformesPage() {
           <button className="px-6 py-2 bg-gray-200 text-[#0A2342] font-semibold rounded-lg shadow-md hover:bg-gray-300 transition-colors duration-200">
             2026 (Próximamente)
           </button>
-          {/* Puedes añadir más botones o un <select> para años */}
         </div>
 
-        <div className="overflow-x-auto"> {/* Para manejar tablas grandes en móviles */}
+        <div className="overflow-x-auto">
           <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
             <thead className="bg-gray-100 border-b border-gray-200">
               <tr>
@@ -94,9 +92,6 @@ export default function InformesPage() {
           </table>
         </div>
       </section>
-
-      {/* Puedes añadir más secciones aquí si quieres contexto adicional o gráficos */}
-      
       <footer className="text-center mt-12 pt-8 border-t border-gray-300">
         <h3 className="font-bold mb-2">Aviso Legal</h3>
         <p className="text-xs text-gray-500 max-w-4xl mx-auto">
