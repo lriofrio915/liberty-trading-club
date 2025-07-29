@@ -1,36 +1,37 @@
+// app/informes/NQ/page.tsx
+
 import Link from 'next/link';
 
 export const metadata = {
-  title: "Informes Operativos Anuales - Pulso Bursátil",
-  description: "Accede a los informes de trading operativos mensuales de Emporium Quality Funds.",
+  title: "Informes Operativos NQ - Pulso Bursátil", // Título más específico
+  description: "Accede a los informes de trading operativos mensuales de la Estrategia Nasdaq (NQ) por Emporium Quality Funds.", // Descripción más específica
 };
 
-// Datos de los informes para 2025
-// Esto podría venir de una API o base de datos en una aplicación real
+// Datos de los informes para 2025 de la Estrategia NQ
 const reports2025 = [
-  { id: 1, month: 'Enero', successRate: 'N/A', link: '/informes/enero-25' },
-  { id: 2, month: 'Febrero', successRate: 'N/A', link: '/informes/febrero-25' },
-  { id: 3, month: 'Marzo', successRate: 'N/A', link: '/informes/marzo-25' },
-  { id: 4, month: 'Abril', successRate: 'N/A', link: '/informes/abril-25' },
-  { id: 5, month: 'Mayo', successRate: 'N/A', link: '/informes/mayo-25' },
-  { id: 6, month: 'Junio', successRate: '75%', link: '/informes/junio-25' }, // Tu informe existente
-  { id: 7, month: 'Julio', successRate: 'N/A', link: '/informes/julio-25' },
-  { id: 8, month: 'Agosto', successRate: 'N/A', link: '/informes/agosto-25' },
-  { id: 9, month: 'Septiembre', successRate: 'N/A', link: '/informes/septiembre-25' },
-  { id: 10, month: 'Octubre', successRate: 'N/A', link: '/informes/octubre-25' },
-  { id: 11, month: 'Noviembre', successRate: 'N/A', link: '/informes/noviembre-25' },
-  { id: 12, month: 'Diciembre', successRate: 'N/A', link: '/informes/diciembre-25' },
+  { id: 1, month: 'Enero', successRate: 'N/A', link: '/informes/NQ/enero-25' },
+  { id: 2, month: 'Febrero', successRate: 'N/A', link: '/informes/NQ/febrero-25' },
+  { id: 3, month: 'Marzo', successRate: 'N/A', link: '/informes/NQ/marzo-25' },
+  { id: 4, month: 'Abril', successRate: 'N/A', link: '/informes/NQ/abril-25' },
+  { id: 5, month: 'Mayo', successRate: 'N/A', link: '/informes/NQ/mayo-25' },
+  { id: 6, month: 'Junio', successRate: '75%', link: '/informes/NQ/junio-25' }, // Ruta actualizada
+  { id: 7, month: 'Julio', successRate: '50%', link: '/informes/NQ/julio-25' }, // Ruta actualizada
+  { id: 8, month: 'Agosto', successRate: 'N/A', link: '/informes/NQ/agosto-25' },
+  { id: 9, month: 'Septiembre', successRate: 'N/A', link: '/informes/NQ/septiembre-25' },
+  { id: 10, month: 'Octubre', successRate: 'N/A', link: '/informes/NQ/octubre-25' },
+  { id: 11, month: 'Noviembre', successRate: 'N/A', link: '/informes/NQ/noviembre-25' },
+  { id: 12, month: 'Diciembre', successRate: 'N/A', link: '/informes/NQ/diciembre-25' },
 ];
 
-export default function InformesPage() {
+export default function InformesNQPage() { // Cambiado el nombre de la función a InformesNQPage
   return (
-    <div className="container mx-auto p-4 md:p-8 max-w-7xl">
-      <header className="text-center mb-12 mt-8"> 
+    <div className="container mx-auto p-4 md:p-8 max-w-7xl pt-20"> {/* Añadimos pt-20 para el navbar fijo */}
+      <header className="text-center mb-12 mt-8">
         <h1 className="text-4xl md:text-5xl font-extrabold text-[#0A2342] mb-4">
-          Informes Operativos de Trading
+          Informes Operativos de Trading NQ
         </h1>
         <p className="text-lg md:text-xl text-[#849E8F]">
-          Accede a los análisis de rendimiento mensuales de la Estrategia.
+          Accede a los análisis de rendimiento mensuales de la Estrategia Nasdaq (NQ).
         </p>
       </header>
 
