@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 export const metadata = {
-  title: "Manual Estrategia NQ - Pulso Bursátil",
+  title: "Manual NQ - Pulso Bursátil",
   description: "Manual detallado de la estrategia de trading para futuros Micro E-mini Nasdaq 100 (NQ), un Enfoque Integrado Macro-Técnico por Emporium Quality Funds.",
 };
 
