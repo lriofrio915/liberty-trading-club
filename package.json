@@ -1,5 +1,5 @@
 {
-  "name": "estrategia-1",
+  "name": "estrategias-emporium",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -25,5 +25,8 @@
     "eslint-config-next": "15.4.3",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
