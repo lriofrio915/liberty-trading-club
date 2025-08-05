@@ -15,7 +15,7 @@ const reports2025 = [
   { id: 4, month: 'Abril', successRate: 'N/A', link: '/informes/ES/abril-25' },
   { id: 5, month: 'Mayo', successRate: 'N/A', link: '/informes/ES/mayo-25' },
   { id: 6, month: 'Junio', successRate: 'N/A', link: '/informes/ES/junio-25' },
-  { id: 7, month: 'Julio', successRate: 'N/A', link: '/informes/ES/julio-25' }, // Asumiendo que hay un informe de julio
+  { id: 7, month: 'Julio', successRate: '60%', link: '/informes/ES/julio-25' }, // Asumiendo que hay un informe de julio
   { id: 8, month: 'Agosto', successRate: 'N/A', link: '/informes/ES/agosto-25' },
   { id: 9, month: 'Septiembre', successRate: 'N/A', link: '/informes/ES/septiembre-25' },
   { id: 10, month: 'Octubre', successRate: 'N/A', link: '/informes/ES/octubre-25' },
