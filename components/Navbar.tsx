@@ -13,11 +13,16 @@ import {
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isEstrategiasDropdownOpen, setIsEstrategiasDropdownOpen] =
-    useState(false);
+  // Nuevo estado para el menú de Operativa
+  const [isOperativaDropdownOpen, setIsOperativaDropdownOpen] = useState(false);
+  // Estados existentes para los otros menús
+  const [isEstrategiasDropdownOpen, setIsEstrategiasDropdownOpen] = useState(false);
   const [isInformesDropdownOpen, setIsInformesDropdownOpen] = useState(false);
   const [isAnalisisDropdownOpen, setIsAnalisisDropdownOpen] = useState(false);
 
+  // Nueva referencia para el menú de Operativa
+  const operativaDropdownRef = useRef<HTMLDivElement>(null);
+  // Referencias existentes
   const estrategiasDropdownRef = useRef<HTMLDivElement>(null);
   const informesDropdownRef = useRef<HTMLDivElement>(null);
   const analisisDropdownRef = useRef<HTMLDivElement>(null);
@@ -25,6 +30,7 @@ export default function Navbar() {
   // Función para cerrar todos los menús y dropdowns
   const closeAllMenus = () => {
     setIsMobileMenuOpen(false);
+    setIsOperativaDropdownOpen(false); // Incluimos el nuevo menú
     setIsEstrategiasDropdownOpen(false);
     setIsInformesDropdownOpen(false);
     setIsAnalisisDropdownOpen(false);
@@ -35,6 +41,8 @@ export default function Navbar() {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       if (
+        operativaDropdownRef.current &&
+        !operativaDropdownRef.current.contains(target) &&
         estrategiasDropdownRef.current &&
         !estrategiasDropdownRef.current.contains(target) &&
         informesDropdownRef.current &&
@@ -42,6 +50,7 @@ export default function Navbar() {
         analisisDropdownRef.current &&
         !analisisDropdownRef.current.contains(target)
       ) {
+        setIsOperativaDropdownOpen(false);
         setIsEstrategiasDropdownOpen(false);
         setIsInformesDropdownOpen(false);
         setIsAnalisisDropdownOpen(false);
@@ -52,7 +61,7 @@ export default function Navbar() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [estrategiasDropdownRef, informesDropdownRef, analisisDropdownRef]);
+  }, [operativaDropdownRef, estrategiasDropdownRef, informesDropdownRef, analisisDropdownRef]);
 
   return (
     <nav className="fixed top-0 left-0 w-full bg-[#0A2342] p-4 text-white shadow-lg z-50">
@@ -77,9 +86,7 @@ export default function Navbar() {
           <button
             onClick={() => {
               setIsMobileMenuOpen(!isMobileMenuOpen);
-              setIsEstrategiasDropdownOpen(false);
-              setIsInformesDropdownOpen(false);
-              setIsAnalisisDropdownOpen(false);
+              closeAllMenus(); // Asegura que todos los dropdowns se cierren en móvil
             }}
             className="text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 p-1 rounded"
             aria-label="Toggle navigation"
@@ -94,11 +101,64 @@ export default function Navbar() {
 
         {/* Enlaces de Navegación para Escritorio */}
         <div className="hidden md:flex space-x-6 items-center">
-          {/* Menú desplegable de Estrategias */}
+          {/* Menú desplegable de Operativa (NUEVO) */}
+          <div className="relative" ref={operativaDropdownRef}>
+            <button
+              onClick={() => {
+                setIsOperativaDropdownOpen(!isOperativaDropdownOpen);
+                setIsEstrategiasDropdownOpen(false);
+                setIsInformesDropdownOpen(false);
+                setIsAnalisisDropdownOpen(false);
+              }}
+              className="flex items-center text-white hover:text-gray-300 transition-colors duration-200 px-3 py-2 rounded-md font-medium focus:outline-none cursor-pointer"
+            >
+              Operativa
+              {isOperativaDropdownOpen ? (
+                <ChevronUpIcon className="ml-1 h-4 w-4" />
+              ) : (
+                <ChevronDownIcon className="ml-1 h-4 w-4" />
+              )}
+            </button>
+            {isOperativaDropdownOpen && (
+              <div className="absolute top-full left-0 mt-2 w-48 bg-[#1A3A5E] rounded-md shadow-lg py-1 z-10">
+                <Link
+                  href="/operativas/aluisa-diego"
+                  className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
+                  onClick={closeAllMenus}
+                >
+                  Aluisa Diego
+                </Link>
+                <Link
+                  href="/operativas/riofrio-luis"
+                  className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
+                  onClick={closeAllMenus}
+                >
+                  Riofrío Luis
+                </Link>
+                <Link
+                  href="/operativas/saa-mateo"
+                  className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
+                  onClick={closeAllMenus}
+                >
+                  Saa Mateo
+                </Link>
+                <Link
+                  href="/operativas/tenesaca-gabriel"
+                  className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
+                  onClick={closeAllMenus}
+                >
+                  Tenesaca Gabriel
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Menú desplegable de Estrategias (EXISTENTE) */}
           <div className="relative" ref={estrategiasDropdownRef}>
             <button
               onClick={() => {
                 setIsEstrategiasDropdownOpen(!isEstrategiasDropdownOpen);
+                setIsOperativaDropdownOpen(false); // Cierra los demás
                 setIsInformesDropdownOpen(false);
                 setIsAnalisisDropdownOpen(false);
               }}
@@ -118,31 +178,32 @@ export default function Navbar() {
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
-                  Manual NQ
+                  Estrategia NQ
                 </Link>
                 <Link
                   href="/manuales/SP500-1"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
-                  Manual MES
+                  Estrategia MES
                 </Link>
                 <Link
                   href="/manuales/SP500-2"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
-                  Manual ES
+                  Estrategia ES
                 </Link>
               </div>
             )}
           </div>
 
-          {/* Menú desplegable de Informes */}
+          {/* Menú desplegable de Informes (EXISTENTE) */}
           <div className="relative" ref={informesDropdownRef}>
             <button
               onClick={() => {
                 setIsInformesDropdownOpen(!isInformesDropdownOpen);
+                setIsOperativaDropdownOpen(false);
                 setIsEstrategiasDropdownOpen(false);
                 setIsAnalisisDropdownOpen(false);
               }}
@@ -182,11 +243,12 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Menú desplegable de Análisis Fundamental */}
+          {/* Menú desplegable de Análisis Fundamental (EXISTENTE) */}
           <div className="relative" ref={analisisDropdownRef}>
             <button
               onClick={() => {
                 setIsAnalisisDropdownOpen(!isAnalisisDropdownOpen);
+                setIsOperativaDropdownOpen(false);
                 setIsEstrategiasDropdownOpen(false);
                 setIsInformesDropdownOpen(false);
               }}
@@ -209,18 +271,11 @@ export default function Navbar() {
                   Nasdaq
                 </Link>
                 <Link
-                  href="/sentimiento-macro/MES"
-                  className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
-                  onClick={closeAllMenus}
-                >
-                  Micro S&P 500
-                </Link>
-                <Link
                   href="/sentimiento-macro/ES"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
-                  E-mini S&P 500
+                  S&P 500
                 </Link>
               </div>
             )}
@@ -234,7 +289,42 @@ export default function Navbar() {
           isMobileMenuOpen ? "block" : "hidden"
         } mt-4 space-y-3 pb-2 px-2 transition-all duration-300 ease-in-out`}
       >
-        {/* Estrategias */}
+        {/* Operativa (NUEVO) */}
+        <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
+          Operativa:
+        </span>
+        <Link
+          href="/operativas/aluisa-diego"
+          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+          onClick={closeAllMenus}
+        >
+          Aluisa Diego
+        </Link>
+        <Link
+          href="/operativas/riofrio-luis"
+          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+          onClick={closeAllMenus}
+        >
+          Riofrío Luis
+        </Link>
+        <Link
+          href="/operativas/saa-mateo"
+          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+          onClick={closeAllMenus}
+        >
+          Saa Mateo
+        </Link>
+        <Link
+          href="/operativas/tenesaca-gabriel"
+          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+          onClick={closeAllMenus}
+        >
+          Tenesaca Gabriel
+        </Link>
+
+        <hr className="border-gray-700 my-2" />
+
+        {/* Estrategias (EXISTENTE) */}
         <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
           Estrategias:
         </span>
@@ -243,26 +333,26 @@ export default function Navbar() {
           className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
           onClick={closeAllMenus}
         >
-          Manual NQ
+          Estrategia NQ
         </Link>
         <Link
           href="/manuales/SP500-1"
           className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
           onClick={closeAllMenus}
         >
-          Manual MES
+          Estrategia MES
         </Link>
         <Link
           href="/manuales/SP500-2"
           className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
           onClick={closeAllMenus}
         >
-          Manual ES
+          Estrategia ES
         </Link>
 
         <hr className="border-gray-700 my-2" />
 
-        {/* Informes */}
+        {/* Informes (EXISTENTE) */}
         <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
           Informes:
         </span>
@@ -290,7 +380,7 @@ export default function Navbar() {
 
         <hr className="border-gray-700 my-2" />
 
-        {/* Análisis Fundamental */}
+        {/* Análisis Fundamental (EXISTENTE) */}
         <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
           Análisis Fundamental:
         </span>
@@ -302,18 +392,11 @@ export default function Navbar() {
           Nasdaq
         </Link>
         <Link
-          href="/sentimiento-macro/MES"
-          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
-          onClick={closeAllMenus}
-        >
-          Micro S&P 500
-        </Link>
-        <Link
           href="/sentimiento-macro/ES"
           className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
           onClick={closeAllMenus}
         >
-          E-mini S&P 500
+          S&P 500
         </Link>
       </div>
     </nav>
