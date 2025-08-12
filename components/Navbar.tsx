@@ -1,4 +1,3 @@
-// components/Navbar.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -29,7 +28,7 @@ export default function Navbar() {
 
   // Función para cerrar todos los menús y dropdowns
   const closeAllMenus = () => {
-    setIsMobileMenuOpen(false);
+    setIsMobileMenuOpen(false); // Esta línea cerrará el menú hamburguesa si está abierto
     setIsOperativaDropdownOpen(false); // Incluimos el nuevo menú
     setIsEstrategiasDropdownOpen(false);
     setIsInformesDropdownOpen(false);
@@ -40,15 +39,14 @@ export default function Navbar() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
+      // Comprueba si el clic fue fuera de *todos* los dropdowns y el botón de hamburguesa
       if (
-        operativaDropdownRef.current &&
-        !operativaDropdownRef.current.contains(target) &&
-        estrategiasDropdownRef.current &&
-        !estrategiasDropdownRef.current.contains(target) &&
-        informesDropdownRef.current &&
-        !informesDropdownRef.current.contains(target) &&
-        analisisDropdownRef.current &&
-        !analisisDropdownRef.current.contains(target)
+        (operativaDropdownRef.current && !operativaDropdownRef.current.contains(target)) &&
+        (estrategiasDropdownRef.current && !estrategiasDropdownRef.current.contains(target)) &&
+        (informesDropdownRef.current && !informesDropdownRef.current.contains(target)) &&
+        (analisisDropdownRef.current && !analisisDropdownRef.current.contains(target)) &&
+        // También asegúrate de que no sea el botón de hamburguesa en sí
+        !(event.target as HTMLElement).closest('button[aria-label="Toggle navigation"]')
       ) {
         setIsOperativaDropdownOpen(false);
         setIsEstrategiasDropdownOpen(false);
@@ -63,8 +61,22 @@ export default function Navbar() {
     };
   }, [operativaDropdownRef, estrategiasDropdownRef, informesDropdownRef, analisisDropdownRef]);
 
+  // Efecto para controlar el scroll del body cuando el menú móvil está abierto
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden'; // Evita el scroll en el body
+    } else {
+      document.body.style.overflow = ''; // Restaura el scroll del body
+    }
+    // Limpieza: asegura que el scroll se restaure si el componente se desmonta
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
+
+
   return (
-    <nav className="fixed top-0 left-0 w-full bg-[#0A2342] p-4 text-white shadow-lg z-50">
+    <nav className="fixed top-0 left-0 w-full bg-[#0A2342] py-4 text-white shadow-lg z-50">
       <div className="container mx-auto flex justify-between items-center">
         {/* Logo */}
         <Link
@@ -85,8 +97,15 @@ export default function Navbar() {
         <div className="md:hidden">
           <button
             onClick={() => {
+              // SOLO alterna el estado del menú móvil, no cierres todos los menús aquí
               setIsMobileMenuOpen(!isMobileMenuOpen);
-              closeAllMenus(); // Asegura que todos los dropdowns se cierren en móvil
+              // Cierra los dropdowns de escritorio si el menú móvil se abre
+              if (!isMobileMenuOpen) {
+                setIsOperativaDropdownOpen(false);
+                setIsEstrategiasDropdownOpen(false);
+                setIsInformesDropdownOpen(false);
+                setIsAnalisisDropdownOpen(false);
+              }
             }}
             className="text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 p-1 rounded"
             aria-label="Toggle navigation"
@@ -243,7 +262,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Menú desplegable de Análisis Fundamental (EXISTENTE) */}
+          {/* Menú desplegable de Herramientas Macro (EXISTENTE) */}
           <div className="relative" ref={analisisDropdownRef}>
             <button
               onClick={() => {
@@ -254,7 +273,7 @@ export default function Navbar() {
               }}
               className="flex items-center text-white hover:text-gray-300 transition-colors duration-200 px-3 py-2 rounded-md font-medium focus:outline-none cursor-pointer"
             >
-              Análisis Fundamental
+              Herramientas Macro
               {isAnalisisDropdownOpen ? (
                 <ChevronUpIcon className="ml-1 h-4 w-4" />
               ) : (
@@ -277,6 +296,35 @@ export default function Navbar() {
                 >
                   S&P 500
                 </Link>
+                {/* Nuevas opciones de Herramientas Macro */}
+                <Link
+                  href="/sentimiento-macro/USDJPY"
+                  className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
+                  onClick={closeAllMenus}
+                >
+                  USDJPY
+                </Link>
+                <Link
+                  href="/sentimiento-macro/USDCHF"
+                  className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
+                  onClick={closeAllMenus}
+                >
+                  USDCHF
+                </Link>
+                <Link
+                  href="/sentimiento-macro/USDCAD"
+                  className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
+                  onClick={closeAllMenus}
+                >
+                  USDCAD
+                </Link>
+                <Link
+                  href="/sentimiento-macro/EURUSD"
+                  className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
+                  onClick={closeAllMenus}
+                >
+                  EURUSD
+                </Link>
               </div>
             )}
           </div>
@@ -285,119 +333,151 @@ export default function Navbar() {
 
       {/* Menú Desplegable para Móvil (Hamburguesa) */}
       <div
-        className={`md:hidden ${
+        className={`md:hidden absolute top-full left-0 w-full bg-[#0A2342] ${
           isMobileMenuOpen ? "block" : "hidden"
-        } mt-4 space-y-3 pb-2 px-2 transition-all duration-300 ease-in-out`}
+        } max-h-[calc(100vh-64px)] overflow-y-auto pb-4 px-2 transition-all duration-300 ease-in-out`}
+        // La altura de 64px es un estimado para la altura del navbar (p-4 ~ 16px padding * 2 + 50px logo = ~82px, pero 64px es un valor común para navbars)
       >
-        {/* Operativa (NUEVO) */}
-        <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
-          Operativa:
-        </span>
-        <Link
-          href="/operativas/aluisa-diego"
-          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
-          onClick={closeAllMenus}
-        >
-          Aluisa Diego
-        </Link>
-        <Link
-          href="/operativas/riofrio-luis"
-          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
-          onClick={closeAllMenus}
-        >
-          Riofrío Luis
-        </Link>
-        <Link
-          href="/operativas/saa-mateo"
-          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
-          onClick={closeAllMenus}
-        >
-          Saa Mateo
-        </Link>
-        <Link
-          href="/operativas/tenesaca-jose"
-          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
-          onClick={closeAllMenus}
-        >
-          Tenesaca Jose
-        </Link>
+        <div className="space-y-3 pt-2"> {/* Contenedor interno para el espaciado */}
+            {/* Operativa (NUEVO) */}
+            <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
+            Operativa:
+            </span>
+            <Link
+            href="/operativas/aluisa-diego"
+            className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+            onClick={closeAllMenus}
+            >
+            Aluisa Diego
+            </Link>
+            <Link
+            href="/operativas/riofrio-luis"
+            className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+            onClick={closeAllMenus}
+            >
+            Riofrío Luis
+            </Link>
+            <Link
+            href="/operativas/saa-mateo"
+            className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+            onClick={closeAllMenus}
+            >
+            Saa Mateo
+            </Link>
+            <Link
+            href="/operativas/tenesaca-jose"
+            className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+            onClick={closeAllMenus}
+            >
+            Tenesaca Jose
+            </Link>
 
-        <hr className="border-gray-700 my-2" />
+            <hr className="border-gray-700 my-2" />
 
-        {/* Estrategias (EXISTENTE) */}
-        <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
-          Estrategias:
-        </span>
-        <Link
-          href="/manuales/Nasdaq"
-          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
-          onClick={closeAllMenus}
-        >
-          Estrategia NQ
-        </Link>
-        <Link
-          href="/manuales/SP500-1"
-          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
-          onClick={closeAllMenus}
-        >
-          Estrategia MES
-        </Link>
-        <Link
-          href="/manuales/SP500-2"
-          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
-          onClick={closeAllMenus}
-        >
-          Estrategia ES
-        </Link>
+            {/* Estrategias (EXISTENTE) */}
+            <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
+            Estrategias:
+            </span>
+            <Link
+            href="/manuales/Nasdaq"
+            className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+            onClick={closeAllMenus}
+            >
+            Estrategia NQ
+            </Link>
+            <Link
+            href="/manuales/SP500-1"
+            className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+            onClick={closeAllMenus}
+            >
+            Estrategia MES
+            </Link>
+            <Link
+            href="/manuales/SP500-2"
+            className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+            onClick={closeAllMenus}
+            >
+            Estrategia ES
+            </Link>
 
-        <hr className="border-gray-700 my-2" />
+            <hr className="border-gray-700 my-2" />
 
-        {/* Informes (EXISTENTE) */}
-        <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
-          Informes:
-        </span>
-        <Link
-          href="/informes/NQ"
-          className="block px-3 py-2 text-white hover:text-gray-300 rounded-md text-base font-medium pl-6"
-          onClick={closeAllMenus}
-        >
-          Informes NQ
-        </Link>
-        <Link
-          href="/informes/MES"
-          className="block px-3 py-2 text-white hover:text-gray-300 rounded-md text-base font-medium pl-6"
-          onClick={closeAllMenus}
-        >
-          Informes MES
-        </Link>
-        <Link
-          href="/informes/ES"
-          className="block px-3 py-2 text-white hover:text-gray-300 rounded-md text-base font-medium pl-6"
-          onClick={closeAllMenus}
-        >
-          Informes ES
-        </Link>
+            {/* Informes (EXISTENTE) */}
+            <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
+            Informes:
+            </span>
+            <Link
+            href="/informes/NQ"
+            className="block px-3 py-2 text-white hover:text-gray-300 rounded-md text-base font-medium pl-6"
+            onClick={closeAllMenus}
+            >
+            Informes NQ
+            </Link>
+            <Link
+            href="/informes/MES"
+            className="block px-3 py-2 text-white hover:text-gray-300 rounded-md text-base font-medium pl-6"
+            onClick={closeAllMenus}
+            >
+            Informes MES
+            </Link>
+            <Link
+            href="/informes/ES"
+            className="block px-3 py-2 text-white hover:text-gray-300 rounded-md text-base font-medium pl-6"
+            onClick={closeAllMenus}
+            >
+            Informes ES
+            </Link>
 
-        <hr className="border-gray-700 my-2" />
+            <hr className="border-gray-700 my-2" />
 
-        {/* Análisis Fundamental (EXISTENTE) */}
-        <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
-          Análisis Fundamental:
-        </span>
-        <Link
-          href="/sentimiento-macro/NQ"
-          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
-          onClick={closeAllMenus}
-        >
-          Nasdaq
-        </Link>
-        <Link
-          href="/sentimiento-macro/ES"
-          className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
-          onClick={closeAllMenus}
-        >
-          S&P 500
-        </Link>
+            {/* Herramientas Macro (EXISTENTE) */}
+            <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
+            Herramientas Macro:
+            </span>
+            <Link
+            href="/sentimiento-macro/NQ"
+            className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+            onClick={closeAllMenus}
+            >
+            Nasdaq
+            </Link>
+            <Link
+            href="/sentimiento-macro/ES"
+            className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+            onClick={closeAllMenus}
+            >
+            S&P 500
+            </Link>
+            {/* Nuevas opciones de Herramientas Macro para móvil */}
+            <Link
+              href="/sentimiento-macro/USDJPY"
+              className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+              onClick={closeAllMenus}
+            >
+              USDJPY
+            </Link>
+            <Link
+              href="/sentimiento-macro/USDCHF"
+              className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+              onClick={closeAllMenus}
+            >
+              USDCHF
+            </Link>
+            <Link
+              href="/sentimiento-macro/USDCAD"
+              className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+              onClick={closeAllMenus}
+            >
+              USDCAD
+            </Link>
+            <Link
+              href="/sentimiento-macro/EURUSD"
+              className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
+              onClick={closeAllMenus}
+            >
+              EURUSD
+            </Link>
+        </div>
       </div>
     </nav>
   );
