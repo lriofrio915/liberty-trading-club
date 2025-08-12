@@ -143,11 +143,11 @@ export default function Navbar() {
                   Saa Mateo
                 </Link>
                 <Link
-                  href="/operativas/tenesaca-gabriel"
+                  href="/operativas/tenesaca-jose"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
-                  Tenesaca Gabriel
+                  Tenesaca Jose
                 </Link>
               </div>
             )}
@@ -315,11 +315,11 @@ export default function Navbar() {
           Saa Mateo
         </Link>
         <Link
-          href="/operativas/tenesaca-gabriel"
+          href="/operativas/tenesaca-jose"
           className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
           onClick={closeAllMenus}
         >
-          Tenesaca Gabriel
+          Tenesaca Jose
         </Link>
 
         <hr className="border-gray-700 my-2" />

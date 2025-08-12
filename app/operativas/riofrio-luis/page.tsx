@@ -1,18 +1,212 @@
-import Image from "next/image";
+"use client"; // Esta directiva convierte el componente en un Client Component
 
+import Image from "next/image";
+import { useState } from "react"; // Importa useState para manejar el estado del componente
+
+// Importa los componentes de Chart.js para el gráfico de barras
+import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+// Registra los componentes de Chart.js. Esto es crucial para que los gráficos se rendericen correctamente.
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+// Asumiendo que estos componentes existen en tu proyecto según el código proporcionado
 import SummarySection from "../../../components/Dashboard/SummarySection";
 import PerformanceChart from "../../../components/Dashboard/PerformanceChart";
 import StrategyBreakdown from "../../../components/Dashboard/StrategyBreakdown";
 import TradesTable from "../../../components/Dashboard/TradesTable";
 
-export const metadata = {
-  title: "Dashboard de Operativa - Pulso Bursátil",
-  description:
-    "Resumen del rendimiento mensual y métricas clave de las estrategias de trading intradía de futuros por Emporium Quality Funds.",
+// NOTA IMPORTANTE: 'export const metadata' ha sido eliminado de aquí.
+// Los componentes marcados con "use client" no pueden exportar metadatos.
+// Si necesitas definir metadatos para esta página, hazlo en un archivo `layout.tsx`
+// en el mismo directorio o en uno superior en tu estructura de Next.js App Router.
+
+// Define la interfaz para los datos del gráfico mensual
+interface MonthlyChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor: string[];
+    borderColor: string[];
+    borderWidth: number;
+  }[];
+}
+
+// Define la interfaz para las props del componente MonthlyAnalyticsChart
+// Se eliminó 'year' de los props ya que no se usa directamente en este componente.
+interface MonthlyAnalyticsChartProps {
+  data: MonthlyChartData; // Tipado específico para 'data'
+}
+
+// Componente para el gráfico de Analíticas Mensuales
+const MonthlyAnalyticsChart = ({ data }: MonthlyAnalyticsChartProps) => {
+  // Opciones del gráfico para personalizar su apariencia y comportamiento
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false, // Permite que el gráfico cambie de tamaño libremente
+    plugins: {
+      legend: {
+        display: false, // Ocultamos la leyenda ya que solo hay un conjunto de datos y los colores son autoexplicativos
+      },
+      tooltip: {
+        callbacks: {
+          // Tipado específico para tooltipItem de Chart.js
+          label: function (tooltipItem: import("chart.js").TooltipItem<"bar">) {
+            let label = tooltipItem.dataset.label ?? "";
+            if (label) {
+              label += ": ";
+            }
+            // Usa tooltipItem.parsed.y para gráficos de barras (puede ser indefinido)
+            if (typeof tooltipItem.parsed.y === "number") {
+              label += `${tooltipItem.parsed.y.toFixed(2)}%`;
+            }
+            return label;
+          },
+        },
+        // Color de fondo personalizado para los tooltips que coincida con el tema
+        backgroundColor: "#0A2342",
+        titleColor: "#FFFFFF",
+        bodyColor: "#FFFFFF",
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false, // Oculta las líneas de cuadrícula verticales
+        },
+        ticks: {
+          color: "#6B7280", // Color para las etiquetas del eje X (meses)
+        },
+      },
+      y: {
+        beginAtZero: true, // Asegura que el eje Y comience en cero
+        ticks: {
+          // Tipado específico para 'value' en la callback de los ticks del eje Y
+          callback: function (value: string | number) {
+            return `${value}%`; // Formatea las etiquetas del eje Y para mostrar porcentaje
+          },
+          color: "#6B7280", // Color para las etiquetas del eje Y (porcentajes)
+        },
+        grid: {
+          color: "#E5E7EB", // Color para las líneas de cuadrícula horizontales
+        },
+      },
+    },
+  };
+
+  return <Bar data={data} options={options} />;
 };
 
 export default function HomePage() {
-  // Estos datos serán pasados a los componentes como props
+  // Datos fijos para el rendimiento mensual a lo largo de diferentes años
+  // Estos datos imitan la estructura y los valores de la imagen proporcionada para 2025
+  // e incluyen datos ficticios para 2023 y 2024.
+  type YearKey = "2023" | "2024" | "2025";
+
+  const monthlyPerformanceData: Record<
+    YearKey,
+    { labels: string[]; data: number[] }
+  > = {
+    "2023": {
+      labels: [
+        "Ene",
+        "Feb",
+        "Mar",
+        "Abr",
+        "May",
+        "Jun",
+        "Jul",
+        "Ago",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dic",
+      ],
+      data: [-1.2, -0.8, 0.5, 1.0, -0.3, 1.5, 0.7, -0.1, 0.9, 1.3, -0.6, 2.0],
+    },
+    "2024": {
+      labels: [
+        "Ene",
+        "Feb",
+        "Mar",
+        "Abr",
+        "May",
+        "Jun",
+        "Jul",
+        "Ago",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dic",
+      ],
+      data: [0.8, 1.1, -0.2, 2.0, -1.0, 0.5, 1.3, -0.4, 0.6, 1.0, -0.2, 1.8],
+    },
+    "2025": {
+      labels: [
+        "Ene",
+        "Feb",
+        "Mar",
+        "Abr",
+        "May",
+        "Jun",
+        "Jul",
+        "Ago",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dic",
+      ],
+      data: [
+        -7.15, -5.58, -2.57, -2.92, -2.62, 0.37, 2.59, 2.19, 1.5, 0.8, -0.4,
+        1.9,
+      ], // Extendido con datos ficticios para Sep-Dic
+    },
+  };
+
+  // Estado para manejar el año seleccionado actualmente para el gráfico
+  const [selectedYear, setSelectedYear] = useState<YearKey>("2025");
+
+  // Función para obtener dinámicamente los datos del gráfico y los colores según el año seleccionado
+  const getChartData = (year: YearKey): MonthlyChartData => {
+    const dataForYear = monthlyPerformanceData[year];
+    const backgroundColors = dataForYear.data.map(
+      (value) => (value < 0 ? "#D9534F" : "#2CA58D") // Rojo para negativo, verde para positivo
+    );
+
+    return {
+      labels: dataForYear.labels,
+      datasets: [
+        {
+          label: "Cambio Mensual",
+          data: dataForYear.data,
+          backgroundColor: backgroundColors,
+          borderColor: backgroundColors, // El color del borde coincide con el fondo para barras sólidas
+          borderWidth: 1,
+        },
+      ],
+    };
+  };
+
+  // Obtiene los datos para el año seleccionado actualmente
+  const currentChartData = getChartData(selectedYear);
+
+  // Estas son tus variables de datos de tablero existentes, sin cambios
   const featuredKpis = {
     netProfit: {
       value: 645,
@@ -96,9 +290,9 @@ export default function HomePage() {
     datasets: [
       {
         label: "Balance",
-        data: [0, 100, 300, 550, 700, 950, 1148], // Sample data mimicking the graph
-        borderColor: "#2CA58D", // Green
-        backgroundColor: "rgba(44, 165, 141, 0.2)", // Light green fill
+        data: [0, 100, 300, 550, 700, 950, 1148], // Datos de ejemplo que imitan el gráfico
+        borderColor: "#2CA58D", // Verde
+        backgroundColor: "rgba(44, 165, 141, 0.2)", // Relleno verde claro
         fill: true,
         tension: 0.4,
       },
@@ -108,7 +302,7 @@ export default function HomePage() {
   const portfolioAllocationData = {
     labels: ["Nasdaq", "SP500"],
     data: [28.6, 42.9],
-    colors: ["#0C422C", "#149266"], // Darker to lighter greens
+    colors: ["#0C422C", "#149266"], // Verdes más oscuros a más claros
   };
 
   const strategyPerformanceData = {
@@ -121,16 +315,20 @@ export default function HomePage() {
     mostUsed: "Nasdaq",
   };
 
-  const detailedTradesData: {
+  // Asegura que el tipo de 'side' sea "Compra" | "Venta"
+  type TradeSide = "Compra" | "Venta";
+  interface Trade {
     id: number;
     asset: string;
-    side: "Compra" | "Venta";
+    side: TradeSide;
     date: string;
     time: string;
     duration: string;
     entryPrice: number;
     netProfit: number;
-  }[] = [
+  }
+
+  const detailedTradesData: Trade[] = [
     {
       id: 1,
       asset: "Nasdaq",
@@ -399,6 +597,36 @@ export default function HomePage() {
         {/* Estadísticas de Estrategia por Activo */}
         <div className="bg-white rounded-lg shadow-xl mb-8 p-6 md:p-8">
           <StrategyBreakdown data={strategyPerformanceData} />
+        </div>
+
+        {/* SECCIÓN DE ANALÍTICAS MENSUALES - POSICIONADA ANTES DE INFORMACIÓN DETALLADA */}
+        <div className="bg-white rounded-lg shadow-xl mb-8 p-6 md:p-8">
+          <h2 className="text-2xl font-bold text-[#0A2342] mb-6">
+            Analíticas Mensuales
+          </h2>
+          {/* Botones de selección de año */}
+          <div className="flex space-x-2 mb-6">
+            {Object.keys(monthlyPerformanceData).map((year) => (
+              <button
+                key={year}
+                onClick={() => setSelectedYear(year as YearKey)}
+                className={`px-4 py-2 rounded-md font-semibold transition-colors duration-200 ${
+                  selectedYear === year
+                    ? "bg-[#0A2342] text-white shadow-md"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
+              >
+                {year}
+              </button>
+            ))}
+          </div>
+          <div className="h-64">
+            {/* Altura fija para el contenedor del gráfico */}
+            <MonthlyAnalyticsChart
+              data={currentChartData}
+              // 'year' se eliminó de las props porque no se usa en este componente
+            />
+          </div>
         </div>
 
         {/* Información Detallada*/}
