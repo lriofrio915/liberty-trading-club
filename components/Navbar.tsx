@@ -131,7 +131,7 @@ export default function Navbar() {
               }}
               className="flex items-center text-white hover:text-gray-300 transition-colors duration-200 px-3 py-2 rounded-md font-medium focus:outline-none cursor-pointer"
             >
-              Operativa
+              Operativas
               {isOperativaDropdownOpen ? (
                 <ChevronUpIcon className="ml-1 h-4 w-4" />
               ) : (
@@ -341,7 +341,7 @@ export default function Navbar() {
         <div className="space-y-3 pt-2"> {/* Contenedor interno para el espaciado */}
             {/* Operativa (NUEVO) */}
             <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
-            Operativa:
+            Operativas:
             </span>
             <Link
             href="/operativas/aluisa-diego"
