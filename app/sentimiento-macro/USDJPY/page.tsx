@@ -25,22 +25,15 @@ interface MacroEconomicData {
 // Componente para una fila de la tabla
 const TableRow: React.FC<{
   data: MacroEconomicData;
-  calculateIndividualScore: (
-    actual: number | string | null,
-    forecast: number | null | undefined,
-    variableName: string,
-    country: 'US' | 'JP',
-    dailyChartInput: "Alcista" | "Neutro" | "Bajista" | null
-  ) => number;
-  calculatePairBias: (usScore: number | null, jpScore: number | null) => number;
+  // calculateIndividualScore y calculatePairBias se eliminan de las props
+  // porque ya no se usan directamente en TableRow.
   dailyChartManualInput: "Alcista" | "Neutro" | "Bajista" | null;
   setDailyChartManualInput: React.Dispatch<
     React.SetStateAction<"Alcista" | "Neutro" | "Bajista" | null>
   >;
 }> = ({
   data,
-  calculateIndividualScore,
-  calculatePairBias,
+  // Se eliminan de la desestructuración
   dailyChartManualInput,
   setDailyChartManualInput,
 }) => {
@@ -549,8 +542,8 @@ const USDJPYSentimentTable: React.FC = () => {
     initialMacroEconomicData,
     getSeasonalityForCurrentMonth,
     dailyChartManualInput,
-    calculateIndividualScore,
-    calculatePairBias,
+    calculateIndividualScore, // Añadir como dependencia
+    calculatePairBias, // Añadir como dependencia
   ]);
 
 
@@ -627,7 +620,7 @@ const USDJPYSentimentTable: React.FC = () => {
       actionMessage = "";
     }
     return analysisText; // Devuelve la cadena HTML directamente
-  }, [bias, macroEconomicData, calculateIndividualScore, calculatePairBias]);
+  }, [bias, macroEconomicData]);
 
 
   // Agrupar datos por categoría para mostrar "Datos" y "Variables" correctamente
@@ -752,8 +745,6 @@ const USDJPYSentimentTable: React.FC = () => {
                   <TableRow
                     key={data.variable}
                     data={data}
-                    calculateIndividualScore={calculateIndividualScore}
-                    calculatePairBias={calculatePairBias}
                     dailyChartManualInput={dailyChartManualInput}
                     setDailyChartManualInput={setDailyChartManualInput}
                   />
