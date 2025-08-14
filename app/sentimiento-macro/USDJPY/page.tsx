@@ -1,5 +1,6 @@
 "use client";
 
+import CotDataTable from "@/components/CotDataTable";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 
 // Definición de tipos para los datos de la tabla
