@@ -324,28 +324,6 @@ const USDJPYSentimentTable: React.FC = () => {
     "Alcista" | "Neutro" | "Bajista" | null
   >(null);
 
-  // Función para manejar el cambio manual en la Gráfica Diaria
-  const handleDailyChartManualInputChange = useCallback((newScore: number) => {
-    setMacroEconomicData(prevData => {
-      return prevData.map(item => {
-        if (item.variable === "Gráfica Diaria") {
-          const usScore = newScore;
-          const jpScore = 0; // Japón sigue siendo 0 (neutral)
-          const pairBias = calculatePairBias(usScore, jpScore);
-          
-          return {
-            ...item,
-            usScore,
-            jpScore,
-            pairBias,
-            usActualValue: newScore === 1 ? "Alcista" : newScore === -1 ? "Bajista" : "Neutro"
-          };
-        }
-        return item;
-      });
-    });
-  }, []);
-
   // Función para calcular la puntuación individual de un dato (1, 0, -1)
   const calculateIndividualScore = useCallback(
     (
@@ -389,7 +367,7 @@ const USDJPYSentimentTable: React.FC = () => {
           if (dailyChartInput === "Bajista") return -1;
           return 0;
         } else {
-          return 1;
+          return 1; // Para Japón, asume un valor fijo, podrías cambiarlo si es necesario
         }
       }
 
@@ -433,6 +411,28 @@ const USDJPYSentimentTable: React.FC = () => {
     },
     []
   );
+
+  // Función para manejar el cambio manual en la Gráfica Diaria
+  const handleDailyChartManualInputChange = useCallback((newScore: number) => {
+    setMacroEconomicData(prevData => {
+      return prevData.map(item => {
+        if (item.variable === "Gráfica Diaria") {
+          const usScore = newScore;
+          const jpScore = 0; // Japón sigue siendo 0 (neutral) para este caso manual
+          const pairBias = calculatePairBias(usScore, jpScore); // Dependency added here
+
+          return {
+            ...item,
+            usScore,
+            jpScore,
+            pairBias,
+            usActualValue: newScore === 1 ? "Alcista" : newScore === -1 ? "Bajista" : "Neutro"
+          };
+        }
+        return item;
+      });
+    });
+  }, [calculatePairBias]); // Added calculatePairBias to dependency array
 
   // Función para cargar los datos de una API Route específica
   const fetchData = useCallback(
@@ -522,12 +522,12 @@ const USDJPYSentimentTable: React.FC = () => {
             }
           }
         }
-         if (usLargeSpeculatorsLongs !== null && usLargeSpeculatorsShorts !== null &&
-             jpLargeSpeculatorsLongs !== null && jpLargeSpeculatorsShorts !== null &&
-             usSmallTradersLongs !== null && usSmallTradersShorts !== null &&
-             jpSmallTradersLongs !== null && jpSmallTradersShorts !== null) {
-            break;
-        }
+          if (usLargeSpeculatorsLongs !== null && usLargeSpeculatorsShorts !== null &&
+              jpLargeSpeculatorsLongs !== null && jpLargeSpeculatorsShorts !== null &&
+              usSmallTradersLongs !== null && usSmallTradersShorts !== null &&
+              jpSmallTradersLongs !== null && jpSmallTradersShorts !== null) {
+              break;
+          }
       }
 
       if (usLargeSpeculatorsLongs === null || usLargeSpeculatorsShorts === null) {
@@ -538,14 +538,14 @@ const USDJPYSentimentTable: React.FC = () => {
       }
 
       return {
-        us: { 
-            largeLongs: usLargeSpeculatorsLongs, 
+        us: {
+            largeLongs: usLargeSpeculatorsLongs,
             largeShorts: usLargeSpeculatorsShorts,
             smallLongs: usSmallTradersLongs,
             smallShorts: usSmallTradersShorts
         },
-        jp: { 
-            largeLongs: jpLargeSpeculatorsLongs, 
+        jp: {
+            largeLongs: jpLargeSpeculatorsLongs,
             largeShorts: jpLargeSpeculatorsShorts,
             smallLongs: jpSmallTradersLongs,
             smallShorts: jpSmallTradersShorts
@@ -719,7 +719,7 @@ const USDJPYSentimentTable: React.FC = () => {
         currentDataMap.set("Gráfica Diaria", {
           ...currentDataMap.get("Gráfica Diaria")!,
           usActualValue: usChartActualValue,
-          jpActualValue: "Precio sobre las 3 emas",
+          jpActualValue: "Precio sobre las 3 emas", // Mantener el valor fijo o ajustarlo según necesidad
           usForecastValue: undefined,
           jpForecastValue: undefined,
         });
@@ -734,6 +734,7 @@ const USDJPYSentimentTable: React.FC = () => {
           'US',
           item.variable === "Gráfica Diaria" ? dailyChartManualInput : null
         );
+        // JP Score para Gráfica Diaria es 0, no se calcula con calculateIndividualScore si es "Gráfica Diaria" o "Estacionalidad"
         const jpScore = (item.variable.includes("Estacionalidad") || item.variable === "Gráfica Diaria") ? 0 : calculateIndividualScore(
           item.jpActualValue,
           item.jpForecastValue,
@@ -757,7 +758,8 @@ const USDJPYSentimentTable: React.FC = () => {
     getSeasonalityForCurrentMonth,
     dailyChartManualInput,
     calculateIndividualScore,
-    calculatePairBias,
+    calculatePairBias, // This dependency is already here, no change needed.
+    handleDailyChartManualInputChange // Ensure this is also a dependency
   ]);
 
   // Calcula el total de la puntuación del par
@@ -779,11 +781,11 @@ const USDJPYSentimentTable: React.FC = () => {
     }
   }, [totalPairBiasScore]);
 
-   // Determina el color basado en el valor numérico del total
+    // Determina el color basado en el valor numérico del total
   const totalScoreColorClass = useMemo(() => {
-    if (totalPairBiasScore > 3) return "text-green-600";    // Alcista (verde)
-    if (totalPairBiasScore < -3) return "text-red-600";     // Bajista (rojo)
-    return "text-gray-600";                                 // Neutro (gris)
+    if (totalPairBiasScore > 3) return "text-green-600";     // Alcista (verde)
+    if (totalPairBiasScore < -3) return "text-red-600";      // Bajista (rojo)
+    return "text-gray-600";                                  // Neutro (gris)
   }, [totalPairBiasScore]);
 
   // Genera el análisis del sesgo de forma profesional
@@ -808,7 +810,7 @@ const USDJPYSentimentTable: React.FC = () => {
         }
       }
     });
-    
+
     let analysisText = "";
     let actionMessage = "";
     let emoji = "";
