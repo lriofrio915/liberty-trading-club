@@ -1,6 +1,5 @@
 "use client";
 
-import CotDataTable from "@/components/CotDataTable";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 
 // Definición de tipos para los datos de la tabla
@@ -23,20 +22,53 @@ interface MacroEconomicData {
   pairBias: number | null;
 }
 
-// Componente para una fila de la tabla
-const TableRow: React.FC<{
+// Interfaz para la respuesta esperada de la API /api/scrape-cot-data
+interface PositionData {
+    long: number;
+    longChange: number;
+    short: number;
+    shortChange: number;
+}
+
+interface OpenInterestData {
+    value: number;
+    changePercent: number;
+}
+
+interface AssetData {
+    assetName: string;
+    priceChange: number;
+    largeSpeculators: PositionData;
+    smallTraders: PositionData;
+    openInterest: OpenInterestData;
+}
+
+interface CategoryData {
+    [category: string]: AssetData[];
+}
+
+interface CotApiResponse {
+    reportDate: string; // Nueva propiedad para la fecha del reporte
+    data: CategoryData;
+    error?: string;
+}
+
+// Props para el componente TableRow
+interface TableRowProps {
   data: MacroEconomicData;
-  // calculateIndividualScore y calculatePairBias se eliminan de las props
-  // porque ya no se usan directamente en TableRow.
   dailyChartManualInput: "Alcista" | "Neutro" | "Bajista" | null;
   setDailyChartManualInput: React.Dispatch<
     React.SetStateAction<"Alcista" | "Neutro" | "Bajista" | null>
   >;
-}> = ({
+  onManualInputChange: (score: number) => void;
+}
+
+// Componente para una fila de la tabla
+const TableRow: React.FC<TableRowProps> = ({
   data,
-  // Se eliminan de la desestructuración
   dailyChartManualInput,
   setDailyChartManualInput,
+  onManualInputChange,
 }) => {
   // Determina el color de la puntuación individual de EE. UU.
   const usScoreColorClass = useMemo(() => {
@@ -67,95 +99,104 @@ const TableRow: React.FC<{
       <td className="py-2 px-4 text-sm text-gray-700">{data.variable}</td>
 
       {/* Columnas de EE. UU. */}
-      {data.variable === "Sentimiento COT" ||
-      data.variable === "Sentimiento Retail" ||
-      data.variable === "Estacionalidad" ||
-      data.variable === "Gráfica Diaria" ? (
-        <td className="py-2 px-4 text-sm text-gray-700 text-center" colSpan={2}>
-          {data.variable === "Gráfica Diaria" ? (
-            <select
-              id="dailyChartSentimentUS"
-              className="p-1 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 w-full"
-              value={dailyChartManualInput || ""}
-              onChange={(e) =>
-                setDailyChartManualInput(
-                  e.target.value as "Alcista" | "Neutro" | "Bajista"
-                )
-              }
-            >
-              <option value="" disabled>
-                Selecciona...
-              </option>
-              <option value="Alcista">Alcista</option>
-              <option value="Neutro">Neutro</option>
-              <option value="Bajista">Bajista</option>
-            </select>
-          ) : (
-            `${data.usActualValue}${data.usUnit}`
-          )}
+      {data.variable.includes("Estacionalidad") ? (
+        <td className="py-2 px-4 text-sm text-gray-700 text-center" colSpan={8}>
+          {`${data.usActualValue !== null ? data.usActualValue : 'Cargando...'}${data.usUnit}`}
         </td>
       ) : (
-        <>
-          <td className="py-2 px-4 text-sm text-gray-700">
-            {data.usActualValue !== null
-              ? `${data.usActualValue}${data.usUnit}`
-              : "Cargando..."}
+        data.variable === "Sentimiento COT" ||
+        data.variable === "Sentimiento Retail" ||
+        data.variable === "Gráfica Diaria" ? (
+          <td className="py-2 px-4 text-sm text-gray-700 text-center" colSpan={data.variable === "Gráfica Diaria" ? 8 : 2}>
+            {data.variable === "Gráfica Diaria" ? (
+              <select
+                id="dailyChartSentimentUS"
+                className="p-1 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 w-full"
+                value={dailyChartManualInput || ""}
+                onChange={(e) => {
+                  const newValue = e.target.value as "Alcista" | "Neutro" | "Bajista";
+                  setDailyChartManualInput(newValue);
+                  const newScore = newValue === "Alcista" ? 1 : newValue === "Bajista" ? -1 : 0;
+                  onManualInputChange(newScore);
+                }}
+              >
+                <option value="" disabled>
+                  Selecciona...
+                </option>
+                <option value="Alcista">Alcista - Precio sobre las 3 EMAS (20, 50 y 200)</option>
+                <option value="Neutro">Neutro - Precio en medio de las EMAS</option>
+                <option value="Bajista">Bajista - Precio debajo de las 3 EMAS</option>
+              </select>
+            ) : (
+              `${data.usActualValue !== null ? data.usActualValue : 'Cargando...'}${data.usUnit}`
+            )}
           </td>
-          <td className="py-2 px-4 text-sm text-gray-700">
-            {data.usForecastValue !== null && data.usForecastValue !== undefined
-              ? `${data.usForecastValue}${data.usUnit}`
-              : "N/A"}
-          </td>
-        </>
+        ) : (
+          <>
+            <td className="py-2 px-4 text-sm text-gray-700">
+              {data.usActualValue !== null
+                ? `${data.usActualValue}${data.usUnit}`
+                : "Cargando..."}
+            </td>
+            <td className="py-2 px-4 text-sm text-gray-700">
+              {data.usForecastValue !== null && data.usForecastValue !== undefined
+                ? `${data.usForecastValue}${data.usUnit}`
+                : "N/A"}
+            </td>
+          </>
+        )
       )}
-      <td
-        className={`py-2 px-4 text-sm font-bold text-center rounded-md ${usScoreColorClass}`}
-      >
-        {data.usScore !== null ? data.usScore : "-"}
-      </td>
-      <td className="py-2 px-4 text-sm text-blue-600 hover:underline">
-        <a href={data.usSource} target="_blank" rel="noopener noreferrer">
-          Fuente
-        </a>
-      </td>
+      {data.variable.includes("Estacionalidad") || data.variable === "Gráfica Diaria" ? null : (
+        <td
+          className={`py-2 px-4 text-sm font-bold text-center rounded-md ${usScoreColorClass}`}
+        >
+          {data.usScore !== null ? data.usScore : "-"}
+        </td>
+      )}
+      {data.variable.includes("Estacionalidad") || data.variable === "Gráfica Diaria" ? null : (
+        <td className="py-2 px-4 text-sm text-blue-600 hover:underline">
+          <a href={data.usSource} target="_blank" rel="noopener noreferrer">
+            Fuente
+          </a>
+        </td>
+      )}
 
-      {/* Columnas de Japón */}
-      {data.variable === "Sentimiento COT" ||
-      data.variable === "Sentimiento Retail" ||
-      data.variable === "Estacionalidad" ||
-      data.variable === "Gráfica Diaria" ? (
-        <td className="py-2 px-4 text-sm text-gray-700 text-center" colSpan={2}>
-          {data.variable === "Gráfica Diaria" ? (
-            // No hay select para Japón en Gráfica Diaria, solo se muestra el valor
-            `${data.jpActualValue}${data.jpUnit}`
-          ) : (
-            `${data.jpActualValue}${data.jpUnit}`
-          )}
-        </td>
-      ) : (
-        <>
-          <td className="py-2 px-4 text-sm text-gray-700">
-            {data.jpActualValue !== null
-              ? `${data.jpActualValue}${data.jpUnit}`
-              : "Cargando..."}
+      {/* Columnas de Japón - Se ocultan completamente para Estacionalidad y Gráfica Diaria */}
+      {data.variable.includes("Estacionalidad") || data.variable === "Gráfica Diaria" ? null : (
+        data.variable === "Sentimiento COT" ||
+        data.variable === "Sentimiento Retail" ? (
+          <td className="py-2 px-4 text-sm text-gray-700 text-center" colSpan={2}>
+            {`${data.jpActualValue !== null ? data.jpActualValue : 'Cargando...'}${data.jpUnit}`}
           </td>
-          <td className="py-2 px-4 text-sm text-gray-700">
-            {data.jpForecastValue !== null && data.jpForecastValue !== undefined
-              ? `${data.jpForecastValue}${data.jpUnit}`
-              : "N/A"}
+        ) : (
+          <>
+            <td className="py-2 px-4 text-sm text-gray-700">
+              {data.jpActualValue !== null
+                ? `${data.jpActualValue}${data.jpUnit}`
+                : "Cargando..."}
+            </td>
+            <td className="py-2 px-4 text-sm text-gray-700">
+              {data.jpForecastValue !== null && data.jpForecastValue !== undefined
+                ? `${data.jpForecastValue}${data.jpUnit}`
+                : "N/A"}
+            </td>
+          </>
+        )
+      )}
+      {data.variable.includes("Estacionalidad") || data.variable === "Gráfica Diaria" ? null : (
+        <>
+          <td
+            className={`py-2 px-4 text-sm font-bold text-center rounded-md ${jpScoreColorClass}`}
+          >
+            {data.jpScore !== null ? data.jpScore : "-"}
+          </td>
+          <td className="py-2 px-4 text-sm text-blue-600 hover:underline">
+            <a href={data.jpSource} target="_blank" rel="noopener noreferrer">
+              Fuente
+            </a>
           </td>
         </>
       )}
-      <td
-        className={`py-2 px-4 text-sm font-bold text-center rounded-md ${jpScoreColorClass}`}
-      >
-        {data.jpScore !== null ? data.jpScore : "-"}
-      </td>
-      <td className="py-2 px-4 text-sm text-blue-600 hover:underline">
-        <a href={data.jpSource} target="_blank" rel="noopener noreferrer">
-          Fuente
-        </a>
-      </td>
 
       {/* Columna de Sesgo del Par */}
       <td
@@ -169,33 +210,26 @@ const TableRow: React.FC<{
 
 // Componente principal de la tabla de sentimiento USDJPY
 const USDJPYSentimentTable: React.FC = () => {
-  // Datos de estacionalidad hardcodeados para EE. UU. (Nasdaq) y Japón (Nikkei)
+  // Datos de estacionalidad hardcodeados para el par USDJPY
   const seasonalityData = useMemo(
     () => ({
-      us: {
-        Jan: 2.13, Feb: -0.37, Mar: 0.2, Apr: 0.92, May: 2.89, Jun: 2.72,
-        Jul: 4.16, Aug: 0.59, Sep: -2.48, Oct: 1.07, Nov: 4.4, Dec: -0.28,
+      usdjpy: {
+        Jan: -0.4, Feb: 0.6, Mar: 0.9, Apr: 0.3, May: 0.4, Jun: 0.5,
+        Jul: -1.2, Aug: -0.1, Sep: 0.5, Oct: 0.7, Nov: 0.4, Dec: 0.1,
       },
-      jp: {
-        Jan: 0.8, Feb: 0.5, Mar: 1.2, Apr: 0.9, May: 0.7, Jun: -0.1,
-        Jul: 0.3, Aug: 0.2, Sep: -0.5, Oct: 0.6, Nov: 1.0, Dec: 0.4,
-      }, // Datos ficticios para Japón
     }),
     []
   );
 
-  // Función para obtener el valor de estacionalidad del mes actual
-  const getSeasonalityForCurrentMonth = useCallback((country: 'US' | 'JP') => {
-    const currentMonth = new Date().toLocaleString("en-us", { month: "short" }); // Ej: 'Aug'
+  // Función para obtener el valor de estacionalidad del mes actual para el par USDJPY
+  const getSeasonalityForCurrentMonth = useCallback(() => {
+    const currentMonth = new Date().toLocaleString("en-us", { month: "short" });
     const monthKey =
-      currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1); // Ej: 'Aug'
-    // Usar las claves en minúsculas 'us' y 'jp' para acceder a seasonalityData
-    const key = country === 'US' ? 'us' : 'jp';
-    return seasonalityData[key]?.[monthKey as keyof typeof seasonalityData.us] || 0;
+      currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1);
+    return seasonalityData.usdjpy?.[monthKey as keyof typeof seasonalityData.usdjpy] || 0;
   }, [seasonalityData]);
 
   // Definición de los datos iniciales de la tabla.
-  // Usamos useMemo para asegurar que este array solo se cree una vez.
   const initialMacroEconomicData: MacroEconomicData[] = useMemo(
     () => [
       {
@@ -250,16 +284,16 @@ const USDJPYSentimentTable: React.FC = () => {
       // Datos de Sentimiento
       {
         category: "SENTIMIENTO",
-        variable: "Sentimiento COT", // Unificado para ambos países, el valor hardcodeado es el mismo en la imagen
-        usActualValue: 67, usForecastValue: undefined, usUnit: "%", usSource: "https://www.insider-week.com/", usScore: null,
-        jpActualValue: 67, jpForecastValue: undefined, jpUnit: "%", jpSource: "https://www.insider-week.com/", jpScore: null,
+        variable: "Sentimiento COT",
+        usActualValue: null, usForecastValue: undefined, usUnit: "%", usSource: "https://www.insider-week.com/", usScore: null,
+        jpActualValue: null, jpForecastValue: undefined, jpUnit: "%", jpSource: "https://www.insider-week.com/", jpScore: null,
         pairBias: null,
       },
       {
         category: "SENTIMIENTO",
-        variable: "Sentimiento Retail", // Unificado para ambos países
-        usActualValue: -58, usForecastValue: undefined, usUnit: "%", usSource: "https://www.forex.com/en-us/markets/sentiment/", usScore: null,
-        jpActualValue: -58, jpForecastValue: undefined, jpUnit: "%", jpSource: "https://www.forex.com/en-us/markets/sentiment/", jpScore: null,
+        variable: "Sentimiento Retail",
+        usActualValue: null, usForecastValue: undefined, usUnit: "%", usSource: "https://www.forex.com/en-us/markets/sentiment/", usScore: null,
+        jpActualValue: null, jpForecastValue: undefined, jpUnit: "%", jpSource: "https://www.forex.com/en-us/markets/sentiment/", jpScore: null,
         pairBias: null,
       },
       // Datos Técnicos
@@ -273,8 +307,10 @@ const USDJPYSentimentTable: React.FC = () => {
       {
         category: "TÉCNICOS",
         variable: "Gráfica Diaria",
-        usActualValue: "Precio sobre las 3 emas", usForecastValue: undefined, usUnit: "", usSource: "Entrada Manual", usScore: null,
-        jpActualValue: "Precio sobre las 3 emas", jpForecastValue: undefined, jpUnit: "", jpSource: "Entrada Manual", jpScore: null,
+        usActualValue: null,
+        usForecastValue: undefined, usUnit: "", usSource: "Entrada Manual", usScore: null,
+        jpActualValue: null,
+        jpForecastValue: undefined, jpUnit: "", jpSource: "Entrada Manual", jpScore: null,
         pairBias: null,
       },
     ],
@@ -282,13 +318,33 @@ const USDJPYSentimentTable: React.FC = () => {
   );
 
   const [macroEconomicData, setMacroEconomicData] = useState<MacroEconomicData[]>(initialMacroEconomicData);
-  const [isLoading, setIsLoading] = useState(true); // Se inicia en true porque ahora hay APIs que cargar
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Nuevo estado para la entrada manual de Gráfica Diaria (solo para EE. UU. / USD)
   const [dailyChartManualInput, setDailyChartManualInput] = useState<
     "Alcista" | "Neutro" | "Bajista" | null
   >(null);
+
+  // Función para manejar el cambio manual en la Gráfica Diaria
+  const handleDailyChartManualInputChange = useCallback((newScore: number) => {
+    setMacroEconomicData(prevData => {
+      return prevData.map(item => {
+        if (item.variable === "Gráfica Diaria") {
+          const usScore = newScore;
+          const jpScore = 0; // Japón sigue siendo 0 (neutral)
+          const pairBias = calculatePairBias(usScore, jpScore);
+          
+          return {
+            ...item,
+            usScore,
+            jpScore,
+            pairBias,
+            usActualValue: newScore === 1 ? "Alcista" : newScore === -1 ? "Bajista" : "Neutro"
+          };
+        }
+        return item;
+      });
+    });
+  }, []);
 
   // Función para calcular la puntuación individual de un dato (1, 0, -1)
   const calculateIndividualScore = useCallback(
@@ -299,94 +355,81 @@ const USDJPYSentimentTable: React.FC = () => {
       country: 'US' | 'JP',
       dailyChartInput: "Alcista" | "Neutro" | "Bajista" | null
     ): number => {
-      if (actual === null) return 0; // Si no hay valor actual, es neutral
+      if (actual === null) return 0;
 
       // Lógica especial para Sentimiento COT
       if (variableName === "Sentimiento COT") {
-        if (typeof actual !== 'number') return 0; // Debe ser numérico
-        if (actual > 10) return 1; // Alcista
-        if (actual < -10) return -1; // Bajista
-        return 0; // Neutral
+        if (typeof actual !== 'number') return 0;
+        if (actual > 10) return 1;
+        if (actual < -10) return -1;
+        return 0;
       }
 
       // Lógica especial para Sentimiento Retail (contrario al índice)
       if (variableName === "Sentimiento Retail") {
         if (typeof actual !== 'number') return 0;
-        if (actual < -10) return 1; // Retail bajista -> Alcista para índice (contrario)
-        if (actual > 10) return -1; // Retail alcista -> Bajista para índice (contrario)
-        return 0; // Neutral
+        if (actual < -10) return 1;
+        if (actual > 10) return -1;
+        return 0;
       }
 
       // Lógica especial para Estacionalidad
-      if (variableName === "Estacionalidad") {
+      if (variableName.includes("Estacionalidad")) {
         if (typeof actual !== 'number') return 0;
-        if (actual > 0) return 1; // Positivo si el rendimiento promedio es positivo
-        if (actual < 0) return -1; // Negativo si el rendimiento promedio es negativo
-        return 0; // Neutral si es cero
+        if (actual > 0) return 1;
+        if (actual < 0) return -1;
+        return 0;
       }
 
       // Lógica especial para Gráfica Diaria (entrada manual)
       if (variableName === "Gráfica Diaria") {
-        // Para USD, usamos la entrada manual
         if (country === 'US') {
           if (dailyChartInput === "Alcista") return 1;
           if (dailyChartInput === "Neutro") return 0;
           if (dailyChartInput === "Bajista") return -1;
-          return 0; // Por defecto si no hay entrada manual
-        } else { // Para JP, el valor es hardcodeado "Precio sobre las 3 emas"
-          // Asumimos que "Precio sobre las 3 emas" es Alcista (1)
-          // El usuario puede ajustar esto si la lógica es diferente para JP
-          return 1; // Hardcodeado a Alcista para JP según la imagen
+          return 0;
+        } else {
+          return 1;
         }
       }
 
       // Para variables que requieren comparación actual vs. forecast
-      if (typeof actual !== 'number' || typeof forecast !== 'number') return 0; // Necesitan ser números
+      if (typeof actual !== 'number' || typeof forecast !== 'number') return 0;
 
-      // Lógica para Inflación y Tasa de Interés: mayor que forecast es positivo para la moneda
+      // Lógica para Inflación y Tasa de Interés
       if (variableName === "Inflación" || variableName === "Tasa de Interés") {
         if (actual > forecast) return 1;
         if (actual < forecast) return -1;
         return 0;
       }
 
-      // Lógica para Tasa de Desempleo: menor que forecast es positivo para la moneda
+      // Lógica para Tasa de Desempleo
       if (variableName === "Tasa de Desempleo") {
         if (actual < forecast) return 1;
         if (actual > forecast) return -1;
         return 0;
       }
 
-      // Lógica estándar para Crecimiento del PIB, PMI, Ventas Minoristas: mayor que forecast es positivo para la moneda
+      // Lógica estándar para otras variables
       if (actual > forecast) return 1;
       if (actual < forecast) return -1;
-      return 0; // Neutral
+      return 0;
     },
     []
   );
 
-  // Función para calcular el sesgo del par USDJPY basado en las puntuaciones individuales
+  // Función para calcular el sesgo del par USDJPY
   const calculatePairBias = useCallback(
     (usScore: number | null, jpScore: number | null): number => {
-      if (usScore === null || jpScore === null) return 0; // Si falta alguna puntuación, es neutral
+      if (usScore === null || jpScore === null) return 0;
 
-      // Lógica: USD (primera moneda) vs JPY (segunda moneda)
-      // +1 para USD, -1 para JPY (favorece el par alcista)
-      // -1 para USD, +1 para JPY (favorece el par bajista)
-
-      // Escenario 1: USD fuerte, JPY débil (Alcista para USDJPY)
       if (usScore === 1 && jpScore === -1) return 1;
-      // Escenario 2: USD débil, JPY fuerte (Bajista para USDJPY)
       if (usScore === -1 && jpScore === 1) return -1;
-
-      // Escenario 3: Ambos fuertes o ambos débiles (Neutral para el par)
       if ((usScore === 1 && jpScore === 1) || (usScore === -1 && jpScore === -1)) return 0;
+      if (usScore === 0) return -jpScore;
+      if (jpScore === 0) return usScore;
 
-      // Escenario 4: Uno neutral, el otro define
-      if (usScore === 0) return -jpScore; // Si USD es neutral, JPY score inverso define (JPY fuerte -> par baja, JPY débil -> par sube)
-      if (jpScore === 0) return usScore; // Si JPY es neutral, USD score define (USD fuerte -> par sube, USD débil -> par baja)
-
-      return 0; // Por defecto, neutral
+      return 0;
     },
     []
   );
@@ -395,7 +438,15 @@ const USDJPYSentimentTable: React.FC = () => {
   const fetchData = useCallback(
     async (apiPath: string, variableName: string) => {
       try {
-        const response = await fetch(apiPath);
+        const urlToFetch = new URL(apiPath, window.location.origin).toString();
+        const response = await fetch(urlToFetch);
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          throw new Error(`La API '${apiPath}' no devolvió JSON. Content-Type: ${contentType}. Respuesta: ${text.substring(0, 100)}...`);
+        }
+
         if (!response.ok) {
           const errorData = await response.json();
           const errorMessage =
@@ -416,17 +467,110 @@ const USDJPYSentimentTable: React.FC = () => {
     []
   );
 
-  // Efecto para cargar los datos al montar el componente
+  // Función para cargar datos COT
+  const fetchCotData = useCallback(async () => {
+    try {
+      const urlToFetch = new URL("/api/scrape-cot-data", window.location.origin).toString();
+      const response = await fetch(urlToFetch);
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`La API '/api/scrape-cot-data' no devolvió JSON. Content-Type: ${contentType}. Respuesta: ${text.substring(0, 100)}...`);
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Error al obtener datos COT");
+      }
+      const apiData: CotApiResponse = await response.json();
+      console.log("Respuesta completa de la API COT:", apiData);
+
+      let usLargeSpeculatorsLongs: number | null = null;
+      let usLargeSpeculatorsShorts: number | null = null;
+      let jpLargeSpeculatorsLongs: number | null = null;
+      let jpLargeSpeculatorsShorts: number | null = null;
+      let usSmallTradersLongs: number | null = null;
+      let usSmallTradersShorts: number | null = null;
+      let jpSmallTradersLongs: number | null = null;
+      let jpSmallTradersShorts: number | null = null;
+
+      for (const category in apiData.data) {
+        if (Object.prototype.hasOwnProperty.call(apiData.data, category)) {
+          for (const asset of apiData.data[category]) {
+            const normalizedAssetName = asset.assetName.trim().toUpperCase();
+            console.log(`Verificando activo: '${asset.assetName}' (Normalizado: '${normalizedAssetName}')`);
+
+            if (normalizedAssetName.includes("DOLLAR INDEX")) {
+              usLargeSpeculatorsLongs = asset.largeSpeculators.long;
+              usLargeSpeculatorsShorts = asset.largeSpeculators.short;
+              usSmallTradersLongs = asset.smallTraders.long;
+              usSmallTradersShorts = asset.smallTraders.short;
+              console.log(`USD COT - Nombre de activo encontrado: '${asset.assetName}', Large Longs: ${usLargeSpeculatorsLongs}, Large Shorts: ${usLargeSpeculatorsShorts}, Small Longs: ${usSmallTradersLongs}, Small Shorts: ${usSmallTradersShorts}`);
+            } else if (normalizedAssetName.includes("JAPANESE YEN")) {
+              jpLargeSpeculatorsLongs = asset.largeSpeculators.long;
+              jpLargeSpeculatorsShorts = asset.largeSpeculators.short;
+              jpSmallTradersLongs = asset.smallTraders.long;
+              jpSmallTradersShorts = asset.smallTraders.short;
+              console.log(`JPY COT - Nombre de activo encontrado: '${asset.assetName}', Large Longs: ${jpLargeSpeculatorsLongs}, Large Shorts: ${jpLargeSpeculatorsShorts}, Small Longs: ${jpSmallTradersLongs}, Small Shorts: ${jpSmallTradersShorts}`);
+            }
+            if (usLargeSpeculatorsLongs !== null && usLargeSpeculatorsShorts !== null &&
+                jpLargeSpeculatorsLongs !== null && jpLargeSpeculatorsShorts !== null &&
+                usSmallTradersLongs !== null && usSmallTradersShorts !== null &&
+                jpSmallTradersLongs !== null && jpSmallTradersShorts !== null) {
+                break;
+            }
+          }
+        }
+         if (usLargeSpeculatorsLongs !== null && usLargeSpeculatorsShorts !== null &&
+             jpLargeSpeculatorsLongs !== null && jpLargeSpeculatorsShorts !== null &&
+             usSmallTradersLongs !== null && usSmallTradersShorts !== null &&
+             jpSmallTradersLongs !== null && jpSmallTradersShorts !== null) {
+            break;
+        }
+      }
+
+      if (usLargeSpeculatorsLongs === null || usLargeSpeculatorsShorts === null) {
+          console.warn("Advertencia: No se encontraron los datos de Large Speculators Longs/Shorts para 'DOLLAR INDEX' en la respuesta de la API COT.");
+      }
+      if (usSmallTradersLongs === null || usSmallTradersShorts === null) {
+        console.warn("Advertencia: No se encontraron los datos de Small Traders Longs/Shorts para 'DOLLAR INDEX' en la respuesta de la API COT.");
+      }
+
+      return {
+        us: { 
+            largeLongs: usLargeSpeculatorsLongs, 
+            largeShorts: usLargeSpeculatorsShorts,
+            smallLongs: usSmallTradersLongs,
+            smallShorts: usSmallTradersShorts
+        },
+        jp: { 
+            largeLongs: jpLargeSpeculatorsLongs, 
+            largeShorts: jpLargeSpeculatorsShorts,
+            smallLongs: jpSmallTradersLongs,
+            smallShorts: jpSmallTradersShorts
+        }
+      };
+
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error(`Error fetching COT data:`, errorMessage);
+      setError((prev) => (prev ? `${prev}\n${errorMessage}` : errorMessage));
+      return null;
+    }
+  }, []);
+
+  // Efecto para cargar todos los datos al montar el componente
   useEffect(() => {
     const loadAllData = async () => {
       setIsLoading(true);
-      setError(null); // Resetear errores al inicio de una nueva carga
+      setError(null);
 
-      // Crear un mapa mutable para actualizar los datos
       const currentDataMap = new Map(
         initialMacroEconomicData.map((item) => [item.variable, { ...item }])
       );
 
+      // Definir todas las llamadas a la API para datos macroeconómicos
       const apiCallsUS = [
         fetchData("/api/scrape-gdp", "Crecimiento del PIB"),
         fetchData("/api/scrape-pmi-manufacturing", "PMI Manufacturero"),
@@ -447,9 +591,11 @@ const USDJPYSentimentTable: React.FC = () => {
         fetchData("/api/scrape-interest-rate-japan", "Tasa de Interés"),
       ];
 
+      // Ejecutar todas las llamadas a la API en paralelo
       const resultsUS = await Promise.allSettled(apiCallsUS);
-      const resultsJP = await Promise.allSettled(apiCallsJP); // Ejecutar llamadas a API de Japón
+      const resultsJP = await Promise.allSettled(apiCallsJP);
 
+      // Procesar resultados de EE. UU.
       resultsUS.forEach((result) => {
         if (result.status === "fulfilled" && result.value) {
           const { variable, actualValue, forecastValue } = result.value;
@@ -467,6 +613,7 @@ const USDJPYSentimentTable: React.FC = () => {
         }
       });
 
+      // Procesar resultados de Japón
       resultsJP.forEach((result) => {
         if (result.status === "fulfilled" && result.value) {
           const { variable, actualValue, forecastValue } = result.value;
@@ -484,30 +631,95 @@ const USDJPYSentimentTable: React.FC = () => {
         }
       });
 
+      // Obtener y calcular el Sentimiento COT y Sentimiento Retail
+      const cotData = await fetchCotData();
+      if (cotData && cotData.us && cotData.jp) {
+          // Calcular Sentimiento COT (Large Speculators)
+          let usCotSentiment: number | null = null;
+          if (cotData.us.largeLongs !== null && cotData.us.largeShorts !== null) {
+              const sum = cotData.us.largeLongs + cotData.us.largeShorts;
+              if (sum !== 0) {
+                  usCotSentiment = ((cotData.us.largeLongs - cotData.us.largeShorts) / sum) * 100;
+              }
+          }
+
+          let jpCotSentiment: number | null = null;
+          if (cotData.jp.largeLongs !== null && cotData.jp.largeShorts !== null) {
+              const sum = cotData.jp.largeLongs + cotData.jp.largeShorts;
+              if (sum !== 0) {
+                  jpCotSentiment = ((cotData.jp.largeLongs - cotData.jp.largeShorts) / sum) * 100;
+              }
+          }
+
+          if (currentDataMap.has("Sentimiento COT")) {
+              currentDataMap.set("Sentimiento COT", {
+                  ...currentDataMap.get("Sentimiento COT")!,
+                  usActualValue: usCotSentiment !== null ? parseFloat(usCotSentiment.toFixed(2)) : null,
+                  jpActualValue: jpCotSentiment !== null ? parseFloat(jpCotSentiment.toFixed(2)) : null,
+                  usForecastValue: undefined,
+                  jpForecastValue: undefined,
+              });
+          }
+
+          // Calcular Sentimiento Retail (Small Traders)
+          let usRetailSentiment: number | null = null;
+          if (cotData.us.smallLongs !== null && cotData.us.smallShorts !== null) {
+              const sum = cotData.us.smallLongs + cotData.us.smallShorts;
+              if (sum !== 0) {
+                  usRetailSentiment = ((cotData.us.smallLongs - cotData.us.smallShorts) / sum) * 100;
+              }
+          }
+
+          let jpRetailSentiment: number | null = null;
+          if (cotData.jp.smallLongs !== null && cotData.jp.smallShorts !== null) {
+              const sum = cotData.jp.smallLongs + cotData.jp.smallShorts;
+              if (sum !== 0) {
+                  jpRetailSentiment = ((cotData.jp.smallLongs - cotData.jp.smallShorts) / sum) * 100;
+              }
+          }
+
+          if (currentDataMap.has("Sentimiento Retail")) {
+              currentDataMap.set("Sentimiento Retail", {
+                  ...currentDataMap.get("Sentimiento Retail")!,
+                  usActualValue: usRetailSentiment !== null ? parseFloat(usRetailSentiment.toFixed(2)) : null,
+                  jpActualValue: jpRetailSentiment !== null ? parseFloat(jpRetailSentiment.toFixed(2)) : null,
+                  usForecastValue: undefined,
+                  jpForecastValue: undefined,
+              });
+          }
+      }
 
       // Actualizar los valores hardcodeados directamente en el mapa
-      // Estacionalidad (EE. UU. y Japón)
+      // Estacionalidad (par USDJPY)
       if (currentDataMap.has("Estacionalidad")) {
+        const usdjpySeasonality = getSeasonalityForCurrentMonth();
+        const currentMonthName = new Date().toLocaleString("es-ES", { month: "long" });
+        const formattedMonthName = currentMonthName.charAt(0).toUpperCase() + currentMonthName.slice(1);
+
         currentDataMap.set("Estacionalidad", {
           ...currentDataMap.get("Estacionalidad")!,
-          usActualValue: getSeasonalityForCurrentMonth('US'),
-          jpActualValue: getSeasonalityForCurrentMonth('JP'),
-          usForecastValue: undefined, // No hay previsión para estacionalidad
-          jpForecastValue: undefined, // No hay previsión para estacionalidad
+          variable: `Estacionalidad (USDJPY - ${formattedMonthName})`,
+          usActualValue: usdjpySeasonality,
+          usUnit: "%",
+          usScore: calculateIndividualScore(usdjpySeasonality, undefined, "Estacionalidad", 'US', null),
+          jpActualValue: null,
+          jpScore: null,
+          usForecastValue: undefined,
+          jpForecastValue: undefined,
         });
       }
+
       // Gráfica Diaria (EE. UU. y Japón) - solo el US es manual input
       if (currentDataMap.has("Gráfica Diaria")) {
-        let usScoreValue: number | string | null = null;
-        if (dailyChartManualInput === "Alcista") usScoreValue = "Alcista";
-        else if (dailyChartManualInput === "Neutro") usScoreValue = "Neutro";
-        else if (dailyChartManualInput === "Bajista") usScoreValue = "Bajista";
-        else usScoreValue = "Precio sobre las 3 emas"; // Mantener el hardcodeado si no hay input
+        let usChartActualValue: string | null = null;
+        if (dailyChartManualInput === "Alcista") usChartActualValue = "Alcista";
+        else if (dailyChartManualInput === "Neutro") usChartActualValue = "Neutro";
+        else if (dailyChartManualInput === "Bajista") usChartActualValue = "Bajista";
 
         currentDataMap.set("Gráfica Diaria", {
           ...currentDataMap.get("Gráfica Diaria")!,
-          usActualValue: usScoreValue,
-          jpActualValue: "Precio sobre las 3 emas", // Mantener hardcodeado para Japón
+          usActualValue: usChartActualValue,
+          jpActualValue: "Precio sobre las 3 emas",
           usForecastValue: undefined,
           jpForecastValue: undefined,
         });
@@ -522,7 +734,7 @@ const USDJPYSentimentTable: React.FC = () => {
           'US',
           item.variable === "Gráfica Diaria" ? dailyChartManualInput : null
         );
-        const jpScore = calculateIndividualScore(
+        const jpScore = (item.variable.includes("Estacionalidad") || item.variable === "Gráfica Diaria") ? 0 : calculateIndividualScore(
           item.jpActualValue,
           item.jpForecastValue,
           item.variable,
@@ -540,13 +752,13 @@ const USDJPYSentimentTable: React.FC = () => {
     loadAllData();
   }, [
     fetchData,
+    fetchCotData,
     initialMacroEconomicData,
     getSeasonalityForCurrentMonth,
     dailyChartManualInput,
-    calculateIndividualScore, // Añadir como dependencia
-    calculatePairBias, // Añadir como dependencia
+    calculateIndividualScore,
+    calculatePairBias,
   ]);
-
 
   // Calcula el total de la puntuación del par
   const totalPairBiasScore = useMemo(() => {
@@ -557,13 +769,21 @@ const USDJPYSentimentTable: React.FC = () => {
 
   // Determina el sesgo general basado en la puntuación total del par
   const bias = useMemo(() => {
-    if (totalPairBiasScore >= 4) { // Ajustar rangos según lo necesites para el par
+    // Primero verificamos el rango del total
+    if (totalPairBiasScore > 3) {
       return "Alcista";
-    } else if (totalPairBiasScore <= -4) {
+    } else if (totalPairBiasScore < -3) {
       return "Bajista";
     } else {
       return "Neutro";
     }
+  }, [totalPairBiasScore]);
+
+   // Determina el color basado en el valor numérico del total
+  const totalScoreColorClass = useMemo(() => {
+    if (totalPairBiasScore > 3) return "text-green-600";    // Alcista (verde)
+    if (totalPairBiasScore < -3) return "text-red-600";     // Bajista (rojo)
+    return "text-gray-600";                                 // Neutro (gris)
   }, [totalPairBiasScore]);
 
   // Genera el análisis del sesgo de forma profesional
@@ -573,15 +793,22 @@ const USDJPYSentimentTable: React.FC = () => {
     const neutralFactors: string[] = [];
 
     macroEconomicData.forEach((item) => {
-      if (item.pairBias === 1) {
-        positiveFactors.push(item.variable);
-      } else if (item.pairBias === -1) {
-        negativeFactors.push(item.variable);
+      if (item.variable === "Gráfica Diaria") {
+        const graficaDiariaScore = item.pairBias;
+        if (graficaDiariaScore === 1) positiveFactors.push(item.variable);
+        else if (graficaDiariaScore === -1) negativeFactors.push(item.variable);
+        else neutralFactors.push(item.variable);
       } else {
-        neutralFactors.push(item.variable);
+        if (item.pairBias === 1) {
+          positiveFactors.push(item.variable);
+        } else if (item.pairBias === -1) {
+          negativeFactors.push(item.variable);
+        } else {
+          neutralFactors.push(item.variable);
+        }
       }
     });
-
+    
     let analysisText = "";
     let actionMessage = "";
     let emoji = "";
@@ -620,9 +847,8 @@ const USDJPYSentimentTable: React.FC = () => {
         "Análisis del sesgo no disponible debido a datos insuficientes o indefinidos.";
       actionMessage = "";
     }
-    return analysisText; // Devuelve la cadena HTML directamente
+    return analysisText;
   }, [bias, macroEconomicData]);
-
 
   // Agrupar datos por categoría para mostrar "Datos" y "Variables" correctamente
   const groupedData = useMemo(() => {
@@ -748,6 +974,7 @@ const USDJPYSentimentTable: React.FC = () => {
                     data={data}
                     dailyChartManualInput={dailyChartManualInput}
                     setDailyChartManualInput={setDailyChartManualInput}
+                    onManualInputChange={handleDailyChartManualInputChange}
                   />
                 ))}
               </React.Fragment>
@@ -758,18 +985,12 @@ const USDJPYSentimentTable: React.FC = () => {
 
       <div className="mt-6 p-4 bg-gray-50 rounded-lg shadow-md flex justify-between items-center">
         <div className="text-lg font-semibold text-gray-800">
-          TOTAL: <span className="text-blue-600">{totalPairBiasScore}</span>
+          TOTAL: <span className={totalScoreColorClass}>{totalPairBiasScore}</span>
         </div>
         <div className="text-lg font-semibold">
           SESGO:{" "}
           <span
-            className={
-              bias === "Alcista"
-                ? "text-green-600"
-                : bias === "Bajista"
-                ? "text-red-600"
-                : "text-gray-600"
-            }
+            className={totalScoreColorClass}
           >
             {bias}
           </span>
@@ -783,7 +1004,7 @@ const USDJPYSentimentTable: React.FC = () => {
           </h3>
           <ul className="list-disc list-inside text-gray-700 inline-block">
             <li className="mb-1">
-              <span className="font-medium text-green-700">Alcista:</span> De +4
+              <span className="font-medium text-green-700">Alcista:</span> De +3
               a +12 📈
             </li>
             <li className="mb-1">
@@ -792,7 +1013,7 @@ const USDJPYSentimentTable: React.FC = () => {
             </li>
             <li className="mb-1">
               <span className="font-medium text-red-700">Bajista:</span> De -12
-              a -4 📉
+              a -3 📉
             </li>
           </ul>
         </div>
@@ -801,7 +1022,6 @@ const USDJPYSentimentTable: React.FC = () => {
           <h3 className="text-xl font-semibold mb-3 text-gray-800">
             Análisis del Sesgo del USDJPY
           </h3>
-          {/* Se usa dangerouslySetInnerHTML para renderizar el HTML de la cadena */}
           <p className="text-gray-700" dangerouslySetInnerHTML={{ __html: generateProfessionalAnalysis() }}></p>
         </div>
       </div>

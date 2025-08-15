@@ -12,7 +12,7 @@ interface PositionData {
 
 interface OpenInterestData {
   value: number;
-  changePercent: number; // Aseguramos que mantenga el signo
+  changePercent: number;
 }
 
 interface AssetData {
@@ -28,6 +28,7 @@ interface CategoryData {
 }
 
 interface AssetListResponse {
+  reportDate: string; // Nueva propiedad para la fecha del reporte
   data: CategoryData;
   error?: string;
 }
@@ -36,17 +37,15 @@ function parseNumber(text: string): number {
   if (!text) return 0;
   
   const isNegative = text.includes('(') || text.startsWith('-');
-  const cleaned = text.replace(/[(),]/g, '').trim(); // Removemos paréntesis pero no el %
+  const cleaned = text.replace(/[(),]/g, '').trim();
   
   const parsed = parseFloat(cleaned);
   return isNaN(parsed) ? 0 : (isNegative ? -Math.abs(parsed) : parsed);
 }
 
-// Función especial para Open Interest Change Percent
 function parsePercent(text: string): number {
   if (!text) return 0;
   
-  // Conservamos explícitamente el signo negativo
   const isNegative = text.includes('(') || text.startsWith('-') || text.includes('−');
   const cleaned = text.replace(/[(),%−]/g, '').trim();
   
@@ -67,22 +66,34 @@ export async function GET() {
     const $ = cheerio.load(data);
     const result: CategoryData = {};
     let currentCategory = 'GENERAL';
+    let reportDate = 'Fecha no disponible';
 
+    // Buscar la fecha del reporte
     $('table.cotTableNew.cotTableNew2 tr').each((i, el) => {
-      // Detectar categorías
+      const rowText = $(el).text().trim();
+      if (rowText.includes('Week to:')) {
+        // Extraer la fecha del texto "Week to: MM/DD/YYYY"
+        const dateMatch = rowText.match(/\d{2}\/\d{2}\/\d{4}/);
+        if (dateMatch) {
+          reportDate = dateMatch[0];
+        }
+        return false; // Detener el bucle una vez encontrada la fecha
+      }
+    });
+
+    // Procesar los datos como antes
+    $('table.cotTableNew.cotTableNew2 tr').each((i, el) => {
       if ($(el).find('td[colspan]').length > 0 || $(el).hasClass('tablePart')) {
         currentCategory = $(el).find('td').text().trim() || currentCategory;
         result[currentCategory] = result[currentCategory] || [];
         return;
       }
 
-      // Procesar filas de datos
       const cols = $(el).find('td');
       if (cols.length >= 17) {
         const assetName = cols.eq(0).text().trim();
         
         if (assetName && !assetName.includes('Week to:')) {
-          // Extraer datos manteniendo índices originales
           const priceChange = parseNumber(cols.eq(2).text());
 
           const largeSpeculators = {
@@ -99,10 +110,9 @@ export async function GET() {
             shortChange: parseNumber(cols.eq(15).text())
           };
 
-          // Open Interest con manejo especial para el changePercent
           const openInterest = {
             value: parseNumber(cols.eq(16).text()),
-            changePercent: parsePercent(cols.eq(17).text()) // Usamos la función especial
+            changePercent: parsePercent(cols.eq(17).text())
           };
 
           if (assetName) {
@@ -122,23 +132,22 @@ export async function GET() {
       }
     });
 
-    // Verificación de datos
     const hasData = Object.values(result).some(category => category.length > 0);
     if (!hasData) {
       console.warn('API: No se encontraron datos en la tabla COT.');
       return NextResponse.json<AssetListResponse>(
-        { data: {}, error: 'No se encontraron datos en la tabla COT' },
+        { reportDate, data: {}, error: 'No se encontraron datos en la tabla COT' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json<AssetListResponse>({ data: result });
+    return NextResponse.json<AssetListResponse>({ reportDate, data: result });
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('API Error:', errorMessage);
     return NextResponse.json<AssetListResponse>(
-      { data: {}, error: `Error fetching COT data: ${errorMessage}` },
+      { reportDate: 'Fecha no disponible', data: {}, error: `Error fetching COT data: ${errorMessage}` },
       { status: 500 }
     );
   }
