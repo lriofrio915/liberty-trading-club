@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export const metadata = {
   title: "Informes Operativos MES - Pulso Bursátil",
-  description: "Accede a los informes de trading operativos mensuales de la Estrategia Micro E-mini S&P 500 (MES) por Emporium Quality Funds.",
+  description: "Accede a los informes de trading operativos mensuales de la Estrategia Micro E-mini S&P 500 (MES).",
 };
 
 // Datos de los informes para 2025 de la Estrategia MES

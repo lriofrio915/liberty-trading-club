@@ -1,4 +1,5 @@
 // app/manuales/SP500-2/page.tsx
+import ScrollToTopButton from "@/components/ScrollToTopButton";
 import Image from "next/image";
 
 export const metadata = {
@@ -9,7 +10,8 @@ export const metadata = {
 
 export default function ManualESPage() {
   return (
-    <div className="container mx-auto p-8 pt-1 max-w-4xl">
+    <div className="container mx-auto p-8 pt-1 max-w-4xl relative">
+      <ScrollToTopButton />
       {/* Contenido de la "Página 1" - Idéntico al manual de Nasdaq/MES */}
       <div className="bg-white rounded-lg shadow-xl mb-8 p-10 relative">
         <div className="min-h-[calc(100vh-120px)]">
@@ -19,7 +21,7 @@ export default function ManualESPage() {
           <div className="flex flex-col items-center mb-8">
             <div className="flex items-center space-x-2 mt-6 mb-4">
               <span className="text-2xl font-bold text-gray-800">
-                Emporium Quality Funds
+                Liberty Trading Club
               </span>
             </div>
             <div className="flex items-center space-x-6">
@@ -30,8 +32,8 @@ export default function ManualESPage() {
               </div>
               <div>
                 <Image
-                  src="https://i.ibb.co/20RsFG5H/emporium-logo-1.jpg"
-                  alt="Logo Emporium"
+                  src="https://i.ibb.co/VY4mMs15/icono.png"
+                  alt="Logo Liberty Trading Club"
                   className="w-24 h-24 rounded-full object-cover border-2 border-blue-600 shadow-md"
                   width={100}
                   height={100}
@@ -53,9 +55,9 @@ export default function ManualESPage() {
           <div className="text-center">
             <p className="text-lg font-semibold">L. Riofrio</p>
             <p className="text-gray-700">
-              Emporium Quality Funds, Quito, Ecuador
+              Liberty Trading Club, Quito, Ecuador
             </p>
-            <p className="text-sm italic mt-1">luis.riofrio@emporium.site</p>
+            <p className="text-sm italic mt-1">lriofrio915@gmail.com</p>
             <p className="text-xs mt-3">
               (Recibido: 09 Julio 2025; Aceptado: 11 Julio 2025)
             </p>
@@ -110,7 +112,7 @@ export default function ManualESPage() {
           </p>
         </div>
         <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
-          <span>Emporium Quality Funds</span>
+          <span>Liberty Trading Club</span>
           <span>Página 1</span>
         </div>
       </div>
@@ -256,7 +258,7 @@ export default function ManualESPage() {
           </h3>
         </div>
         <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
-          <span>Emporium Quality Funds</span>
+          <span>Liberty Trading Club</span>
           <span>Página 2</span>
         </div>
       </div>
@@ -333,7 +335,7 @@ export default function ManualESPage() {
           </h3>
         </div>
         <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
-          <span>Emporium Quality Funds</span>
+          <span>Liberty Trading Club</span>
           <span>Página 3</span>
         </div>
       </div>
@@ -450,7 +452,7 @@ export default function ManualESPage() {
           </p>
         </div>
         <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
-          <span>Emporium Quality Funds</span>
+          <span>Liberty Trading Club</span>
           <span>Página 4</span>
         </div>
       </div>
@@ -532,7 +534,7 @@ export default function ManualESPage() {
           </p>
         </div>
         <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
-          <span>Emporium Quality Funds</span>
+          <span>Liberty Trading Club</span>
           <span>Página 5</span>
         </div>
       </div>
@@ -646,7 +648,7 @@ export default function ManualESPage() {
           </table>
         </div>
         <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
-          <span>Emporium Quality Funds</span>
+          <span>Liberty Trading Club</span>
           <span>Página 6</span>
         </div>
       </div>

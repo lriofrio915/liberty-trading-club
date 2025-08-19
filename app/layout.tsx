@@ -1,9 +1,13 @@
 // app/layout.tsx
-import './globals.css';
-import { Inter } from 'next/font/google';
-import Navbar from '../components/Navbar'; // Asegúrate de que esta importación sea correcta
+import "./globals.css";
+import { Inter } from "next/font/google";
+import Navbar from "../components/Navbar";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap", // Mejora el comportamiento de carga de fuentes
+  variable: "--font-inter", // Opcional: para usar variable CSS
+});
 
 export const metadata = {
   title: "Estrategia de Trading Intradía",
@@ -16,12 +20,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
-      <body className={inter.className}>
-        <Navbar /> 
-        <div className="pt-16 sm:pt-20"> 
-          {children} 
-        </div>
+    <html lang="es" suppressHydrationWarning>
+      <body
+        className={`${inter.className} bg-white text-gray-900`}
+        suppressHydrationWarning
+      >
+        <Navbar />
+
+        <main className="min-h-screen pt-16 sm:pt-20">{children}</main>
       </body>
     </html>
   );

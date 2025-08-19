@@ -1,22 +1,24 @@
+import ScrollToTopButton from "@/components/ScrollToTopButton";
 import Image from "next/image";
 
 export const metadata = {
   title: "Manual NQ - Pulso Bursátil",
-  description: "Manual detallado de la estrategia de trading para futuros Micro E-mini Nasdaq 100 (NQ), un Enfoque Integrado Macro-Técnico por Emporium Quality Funds.",
+  description: "Manual detallado de la estrategia de trading para futuros Micro E-mini Nasdaq 100 (NQ), un Enfoque Integrado Macro-Técnico por Liberty Trading Club.",
 };
 
 export default function ManualNasdaqPage() {
   return (
-    <div className="container mx-auto p-8 pt-1 max-w-4xl">
+    <div className="container mx-auto p-8 pt-1 max-w-4xl relative">
+      <ScrollToTopButton />
       <div className="bg-white rounded-lg shadow-xl mb-8 p-10 relative">
         <div className="min-h-[calc(100vh-120px)]"> {/* Ajusta min-h si es necesario para el espaciado */}
           <div className="text-gray-600 text-xs border-b border-gray-200 pb-1">
-            EQF +20 años de experiencia en conjunto, (2025)
+            EQF +6 años de experiencia, (2025)
           </div>
           <div className="flex flex-col items-center mb-8">
             <div className="flex items-center space-x-2 mt-6 mb-4">
               <span className="text-2xl font-bold text-gray-800">
-                Emporium Quality Funds
+                Liberty Trading Club
               </span>
             </div>
             <div className="flex items-center space-x-6">
@@ -27,8 +29,8 @@ export default function ManualNasdaqPage() {
               </div>
               <div>
                 <Image
-                  src="https://i.ibb.co/20RsFG5H/emporium-logo-1.jpg"
-                  alt="Logo Emporium"
+                  src="https://i.ibb.co/VY4mMs15/icono.png"
+                  alt="Logo Liberty Trading Club"
                   className="w-24 h-24 rounded-full object-cover border-2 border-blue-600 shadow-md"
                   width={100}
                   height={100}
@@ -51,9 +53,9 @@ export default function ManualNasdaqPage() {
           <div className="text-center">
             <p className="text-lg font-semibold">L. Riofrio</p>
             <p className="text-gray-700">
-              Emporium Quality Funds, Quito, Ecuador
+              Liberty Trading Club, Quito, Ecuador
             </p>
-            <p className="text-sm italic mt-1">luis.riofrio@emporium.site</p>
+            <p className="text-sm italic mt-1">lriofrio915@gmail.com</p>
             <p className="text-xs mt-3">
               (Recibido: 09 Julio 2025; Aceptado: 11 Julio 2025)
             </p>
@@ -110,7 +112,7 @@ export default function ManualNasdaqPage() {
           </p>
         </div>
         <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
-          <span>Emporium Quality Funds</span>
+          <span>Liberty Trading Club</span>
           <span>Página 1</span>
         </div>
       </div>
@@ -238,7 +240,7 @@ export default function ManualNasdaqPage() {
           </p>
         </div>
         <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
-          <span>Emporium Quality Funds</span>
+          <span>Liberty Trading Club</span>
           <span>Página 2</span>
         </div>
       </div>
@@ -416,7 +418,7 @@ export default function ManualNasdaqPage() {
           </ul>
         </div>
         <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
-          <span>Emporium Quality Funds</span>
+          <span>Liberty Trading Club</span>
           <span>Página 3</span>
         </div>
       </div>
@@ -538,7 +540,7 @@ export default function ManualNasdaqPage() {
         </div>
         {/* Pie de página de la página 4 */}
         <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
-          <span>Emporium Quality Funds</span>
+          <span>Liberty Trading Club</span>
           <span>Página 4</span>
         </div>
       </div>
@@ -619,7 +621,7 @@ export default function ManualNasdaqPage() {
           </p>
         </div>
         <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
-          <span>Emporium Quality Funds</span>
+          <span>Liberty Trading Club</span>
           <span>Página 5</span>
         </div>
       </div>
@@ -731,7 +733,7 @@ export default function ManualNasdaqPage() {
         </div>
         {/* Pie de página de la página 6 */}
         <div className="flex justify-between pt-4 mt-6 border-t border-gray-200 text-sm text-gray-600">
-          <span>Emporium Quality Funds</span>
+          <span>Liberty Trading Club</span>
           <span>Página 6</span>
         </div>
       </div>

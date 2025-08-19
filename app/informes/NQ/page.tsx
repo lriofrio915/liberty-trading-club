@@ -3,8 +3,8 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: "Informes Operativos NQ - Pulso Bursátil", // Título más específico
-  description: "Accede a los informes de trading operativos mensuales de la Estrategia Nasdaq (NQ) por Emporium Quality Funds.", // Descripción más específica
+  title: "Informes Operativos NQ - Pulso Bursátil", 
+  description: "Accede a los informes de trading operativos mensuales de la Estrategia Nasdaq (NQ).",
 };
 
 // Datos de los informes para 2025 de la Estrategia NQ

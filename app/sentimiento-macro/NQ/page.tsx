@@ -6,8 +6,8 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 interface MacroEconomicData {
   category: string;
   variable: string;
-  actualValue: number | null; // Puede ser null mientras se carga o si hay error
-  forecastValue: number | null | undefined; // Puede ser null, undefined o number
+  actualValue: number | null; 
+  forecastValue: number | null | undefined;
   unit: string;
   source: string;
   isNegativeForNasdaq: boolean; // Indica si un valor actual > prevision es negativo para el Nasdaq (ej: inflación, desempleo)

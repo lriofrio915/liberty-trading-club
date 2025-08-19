@@ -197,7 +197,7 @@ export default function InformeJulio25Page() {
         <h1 className="text-4xl md:text-5xl font-extrabold text-[#0A2342] mb-2">Nasdaq: Análisis Operativo de Julio 2025</h1>
         <p className="text-lg md:text-xl text-[#849E8F]">Publicado: 31 de Julio de 2025</p>
         <p className="text-lg md:text-xl text-[#849E8F]">Operador: Luis Riofrío</p>
-        <p className="text-lg md:text-xl text-[#849E8F]">Emporium Quality Funds</p>
+        <p className="text-lg md:text-xl text-[#849E8F]">Liberty Trading Club</p>
       </header>
 
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-12">

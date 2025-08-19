@@ -204,7 +204,7 @@ export default function InformeJulio25ESPage() {
           Operador: Luis Riofrío
         </p>
         <p className="text-lg md:text-xl text-[#849E8F]">
-          Emporium Quality Funds
+          Liberty Trading Club
         </p>
       </header>
 
