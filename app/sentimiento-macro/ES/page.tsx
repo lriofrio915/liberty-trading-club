@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-// Import Image from "next/image" eliminado y reemplazado con <img> tag para compatibilidad
+import Image from "next/image"; // Importado el componente Image de Next.js para optimización
 
 // Definición de tipos para los datos de la tabla
 interface MacroEconomicData {
@@ -11,7 +11,7 @@ interface MacroEconomicData {
   forecastValue: number | null | undefined;
   unit: string;
   source: string;
-  isNegativeForNasdaq: boolean; // Cambiado a isNegativeForIndex
+  isNegativeForNasdaq: boolean; // Cambiado a isNegativeForIndex (nombre de propiedad en el código original, se mantiene por compatibilidad)
 }
 
 // Definición de tipos para la respuesta general de la API
@@ -511,7 +511,7 @@ const SP500SentimentTable: React.FC = () => {
     const loadAllData = async () => {
       setIsLoading(true);
       setError(null);
-      setIsCalculatingBias(true);
+      setIsCalculatingBias(true); // Se activa solo para la carga inicial de APIs
 
       const currentDataMap = new Map(
         initialMacroEconomicData.map((item) => [item.variable, { ...item }])
@@ -591,42 +591,23 @@ const SP500SentimentTable: React.FC = () => {
 
       setMacroEconomicData(Array.from(currentDataMap.values()));
       setIsLoading(false);
-      setIsCalculatingBias(false);
+      setIsCalculatingBias(false); // Se desactiva una vez que toda la carga inicial está completa
     };
 
     loadAllData();
-  }, [fetchData, initialMacroEconomicData, getSeasonalityForCurrentMonth]);
+  }, [
+    fetchData,
+    initialMacroEconomicData,
+    getSeasonalityForCurrentMonth,
+    // Este useEffect no necesita macroEconomicData como dependencia.
+    // Solo se ejecuta una vez al montar el componente (gracias a sus dependencias estables)
+    // para la carga inicial de datos.
+  ]);
 
-  // Efecto para recalcular la puntuación total y el sesgo cuando dailyChartManualInput cambia
-  useEffect(() => {
-    if (
-      dailyChartManualInput === null &&
-      macroEconomicData.find((d) => d.variable === "Gráfica Diaria")
-        ?.actualValue === null
-    ) {
-      return;
-    }
-
-    setIsCalculatingBias(true);
-
-    const updatedDataForBiasCalculation = macroEconomicData.map((data) => {
-      if (data.variable === "Gráfica Diaria") {
-        let scoreValue: number | null = null;
-        if (dailyChartManualInput === "Alcista") scoreValue = 1;
-        else if (dailyChartManualInput === "Neutro") scoreValue = 0;
-        else if (dailyChartManualInput === "Bajista") scoreValue = -1;
-        return { ...data, actualValue: scoreValue };
-      }
-      return data;
-    });
-
-    const timer = setTimeout(() => {
-      setMacroEconomicData([...updatedDataForBiasCalculation]);
-      setIsCalculatingBias(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [dailyChartManualInput, calculateScore]);
+  // ELIMINADO: El useEffect anterior que manejaba dailyChartManualInput y macroEconomicData
+  // ha sido removido porque era redundante y causaba el bucle infinito.
+  // La actualización de macroEconomicData desde TableRow es suficiente,
+  // y los useMemo de totalScore y bias se recalcularán automáticamente.
 
   // Calcula el total de la puntuación
   const totalScore = useMemo(() => {
@@ -768,12 +749,14 @@ const SP500SentimentTable: React.FC = () => {
         <div className="flex flex-col items-center mb-8 bg-white rounded-xl p-6 shadow-lg border border-blue-100">
           <div className="flex items-center justify-center mb-4">
             <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-md mr-4 overflow-hidden">
-              <img
+              {/* Uso del componente Image de next/image para optimización */}
+              <Image
                 src="https://i.ibb.co/VY4mMs15/icono.png"
                 alt="Liberty Trading Club"
                 width={64}
                 height={64}
                 className="object-cover"
+                priority // Carga esta imagen con alta prioridad
               />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800 text-center">

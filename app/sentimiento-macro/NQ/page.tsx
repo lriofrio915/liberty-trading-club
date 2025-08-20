@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-// Import Image from "next/image" eliminado y reemplazado con <img> tag para compatibilidad
+import Image from "next/image"; // Importado el componente Image de Next.js para optimización
 
 // Definición de tipos para los datos de la tabla
 interface MacroEconomicData {
@@ -365,6 +365,7 @@ const NasdaqSentimentTable: React.FC = () => {
     "Alcista" | "Neutro" | "Bajista" | null
   >(null);
   // Nuevo estado para indicar que el sesgo total se está calculando
+  // Este estado solo se usará para la carga inicial de APIs.
   const [isCalculatingBias, setIsCalculatingBias] = useState(false);
 
 
@@ -464,7 +465,7 @@ const NasdaqSentimentTable: React.FC = () => {
     const loadAllData = async () => {
       setIsLoading(true);
       setError(null); // Resetear errores al inicio de una nueva carga
-      setIsCalculatingBias(true); // Iniciar el mensaje de "calculando"
+      setIsCalculatingBias(true); // Iniciar el mensaje de "calculando" para la carga inicial
 
       const currentDataMap = new Map(
         initialMacroEconomicData.map((item) => [item.variable, { ...item }])
@@ -534,12 +535,10 @@ const NasdaqSentimentTable: React.FC = () => {
         });
       }
 
-      // No actualizamos Gráfica Diaria aquí, se maneja en el onChange del select.
-
       // 3. Actualizar el estado una sola vez al final
       setMacroEconomicData(Array.from(currentDataMap.values()));
       setIsLoading(false);
-      setIsCalculatingBias(false); // Finalizar el mensaje de "calculando"
+      setIsCalculatingBias(false); // Finalizar el mensaje de "calculando" una vez que todos los datos iniciales estén cargados
     };
 
     loadAllData();
@@ -547,39 +546,13 @@ const NasdaqSentimentTable: React.FC = () => {
     fetchData,
     initialMacroEconomicData,
     getSeasonalityForCurrentMonth,
-    // dailyChartManualInput ya no es una dependencia aquí, se maneja directamente en el select
   ]);
 
-  // Efecto para recalcular la puntuación total y el sesgo cuando dailyChartManualInput cambia
-  useEffect(() => {
-    // Si dailyChartManualInput es null al inicio, no hacemos nada hasta que el usuario seleccione algo.
-    if (dailyChartManualInput === null && macroEconomicData.find(d => d.variable === "Gráfica Diaria")?.actualValue === null) {
-      return;
-    }
-
-    setIsCalculatingBias(true); // Empezar a calcular el sesgo
-
-    // Crear un nuevo mapa de datos para el cálculo, asegurando que Gráfica Diaria tenga el valor actualizado
-    const updatedDataForBiasCalculation = macroEconomicData.map(data => {
-      if (data.variable === "Gráfica Diaria") {
-        let scoreValue: number | null = null;
-        if (dailyChartManualInput === "Alcista") scoreValue = 1;
-        else if (dailyChartManualInput === "Neutro") scoreValue = 0;
-        else if (dailyChartManualInput === "Bajista") scoreValue = -1;
-        return { ...data, actualValue: scoreValue };
-      }
-      return data;
-    });
-
-    // Pequeño retardo para simular el cálculo y mostrar el "Cargando..."
-    const timer = setTimeout(() => {
-      // Forzar la re-evaluación de useMemo para totalScore y bias
-      setMacroEconomicData([...updatedDataForBiasCalculation]); // Esto disparará la re-evaluación de useMemo
-      setIsCalculatingBias(false); // Finalizar el mensaje de "calculando"
-    }, 500); // 500ms de retraso
-
-    return () => clearTimeout(timer); // Limpiar el timer si el componente se desmonta o la dependencia cambia antes
-  }, [dailyChartManualInput, calculateScore]); // Depende solo de dailyChartManualInput y calculateScore
+  // Se ELIMINA el useEffect anterior para dailyChartManualInput,
+  // ya que la actualización de `macroEconomicData` en TableRow
+  // es suficiente para que `totalScore` y `bias` se recalculen
+  // debido a sus dependencias en useMemo.
+  // La gestión de `isCalculatingBias` ahora es solo para la carga inicial.
 
   // Calcula el total de la puntuación
   const totalScore = useMemo(() => {
@@ -727,12 +700,14 @@ const NasdaqSentimentTable: React.FC = () => {
         <div className="flex flex-col items-center mb-8 bg-white rounded-xl p-6 shadow-lg border border-blue-100">
           <div className="flex items-center justify-center mb-4">
             <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-md mr-4 overflow-hidden">
-              <img
+              {/* Uso del componente Image de next/image para optimización */}
+              <Image
                 src="https://i.ibb.co/VY4mMs15/icono.png"
                 alt="Liberty Trading Club"
                 width={64}
                 height={64}
                 className="object-cover"
+                priority // Carga esta imagen con alta prioridad
               />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800 text-center">

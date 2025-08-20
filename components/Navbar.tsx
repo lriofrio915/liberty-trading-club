@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-// import Link from "next/link"; // Eliminado
-// import Image from "next/image"; // Eliminado
+import Link from "next/link"; // Añadido
+import Image from "next/image"; // Añadido
 import {
   Bars3Icon,
   XMarkIcon,
@@ -143,19 +143,19 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 w-full bg-[#0A2342] py-4 text-white shadow-lg z-50">
       <div className="container mx-auto flex justify-between items-center px-4">
         {/* Logo */}
-        <a
+        <Link
           href="/"
           className="flex items-center hover:opacity-80 transition-opacity duration-200"
           onClick={closeAllMenus}
         >
-          <img
+          <Image
             src="https://i.ibb.co/VY4mMs15/icono.png"
             alt="Liberty Trading Club Logo"
             width={50}
             height={50}
             className="rounded-full mr-2"
           />
-        </a>
+        </Link>
 
         {/* Botón de Hamburguesa para Móvil */}
         <div className="md:hidden">
@@ -196,27 +196,27 @@ export default function Navbar() {
             </button>
             {isEstrategiasDropdownOpen && (
               <div className="absolute top-full left-0 mt-2 w-48 bg-[#1A3A5E] rounded-md shadow-lg py-1 z-10">
-                <a
+                <Link
                   href="/manuales/Nasdaq"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
                   Estrategia NQ
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/manuales/SP500-1"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
                   Estrategia MES
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/manuales/SP500-2"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
                   Estrategia ES
-                </a>
+                </Link>
               </div>
             )}
           </div>
@@ -242,27 +242,27 @@ export default function Navbar() {
             </button>
             {isInformesDropdownOpen && (
               <div className="absolute top-full left-0 mt-2 w-48 bg-[#1A3A5E] rounded-md shadow-lg py-1 z-10">
-                <a
+                <Link
                   href="/informes/NQ"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
                   Informes NQ
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/informes/MES"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
                   Informes MES
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/informes/ES"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
                   Informes ES
-                </a>
+                </Link>
               </div>
             )}
           </div>
@@ -288,20 +288,20 @@ export default function Navbar() {
             </button>
             {isSesgoDiarioDropdownOpen && (
               <div className="absolute top-full left-0 mt-2 w-48 bg-[#1A3A5E] rounded-md shadow-lg py-1 z-10">
-                <a
+                <Link
                   href="/sentimiento-macro/NQ"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
                   Nasdaq
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/sentimiento-macro/ES"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
                   S&P 500
-                </a>
+                </Link>
               </div>
             )}
           </div>
@@ -327,20 +327,20 @@ export default function Navbar() {
             </button>
             {isInvertirDropdownOpen && (
               <div className="absolute top-full left-0 mt-2 w-48 bg-[#1A3A5E] rounded-md shadow-lg py-1 z-10">
-                <a
+                <Link
                   href="/renta-fija"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
                   Renta Fija
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/renta-variable"
                   className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E] transition-colors duration-200"
                   onClick={closeAllMenus}
                 >
                   Renta Variable
-                </a>
+                </Link>
               </div>
             )}
           </div>
@@ -354,13 +354,13 @@ export default function Navbar() {
           </button>
 
           {/* Botón de Contacto */}
-          <a
+          <Link
             href="/contacto"
             className="px-4 py-2 bg-[#3B82F6] text-white font-medium rounded-md hover:bg-[#2563EB] transition-colors duration-200"
             onClick={closeAllMenus}
           >
             Contacto
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -377,27 +377,27 @@ export default function Navbar() {
             <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
               Estrategias:
             </span>
-            <a
+            <Link
               href="/manuales/Nasdaq"
               className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
               onClick={closeAllMenus}
             >
               Estrategia NQ
-            </a>
-            <a
+            </Link>
+            <Link
               href="/manuales/SP500-1"
               className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
               onClick={closeAllMenus}
             >
               Estrategia MES
-            </a>
-            <a
+            </Link>
+            <Link
               href="/manuales/SP500-2"
               className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
               onClick={closeAllMenus}
             >
               Estrategia ES
-            </a>
+            </Link>
           </div>
 
           {/* Informes */}
@@ -405,27 +405,27 @@ export default function Navbar() {
             <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
               Informes:
             </span>
-            <a
+            <Link
               href="/informes/NQ"
               className="block px-3 py-2 text-white hover:text-gray-300 rounded-md text-base font-medium pl-6"
               onClick={closeAllMenus}
             >
               Informes NQ
-            </a>
-            <a
+            </Link>
+            <Link
               href="/informes/MES"
               className="block px-3 py-2 text-white hover:text-gray-300 rounded-md text-base font-medium pl-6"
               onClick={closeAllMenus}
             >
               Informes MES
-            </a>
-            <a
+            </Link>
+            <Link
               href="/informes/ES"
               className="block px-3 py-2 text-white hover:text-gray-300 rounded-md text-base font-medium pl-6"
               onClick={closeAllMenus}
             >
               Informes ES
-            </a>
+            </Link>
           </div>
 
           {/* Sesgo Diario */}
@@ -433,20 +433,20 @@ export default function Navbar() {
             <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
               Sesgo Diario:
             </span>
-            <a
+            <Link
               href="/sentimiento-macro/NQ"
               className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
               onClick={closeAllMenus}
             >
               Nasdaq
-            </a>
-            <a
+            </Link>
+            <Link
               href="/sentimiento-macro/ES"
               className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
               onClick={closeAllMenus}
             >
               S&P 500
-            </a>
+            </Link>
           </div>
 
           {/* Nuevo Menú desplegable de Invertir (móvil) */}
@@ -454,20 +454,20 @@ export default function Navbar() {
             <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
               Invertir:
             </span>
-            <a
+            <Link
               href="/renta-fija"
               className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
               onClick={closeAllMenus}
             >
               Renta Fija
-            </a>
-            <a
+            </Link>
+            <Link
               href="/renta-variable"
               className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
               onClick={closeAllMenus}
             >
               Renta Variable
-            </a>
+            </Link>
           </div>
 
           {/* Nuevo Botón de Cursos Gratis para móvil */}
@@ -482,13 +482,13 @@ export default function Navbar() {
 
           {/* Botón de Contacto para móvil */}
           <div className="pt-4">
-            <a
+            <Link
               href="/contacto"
               className="block w-full text-center px-4 py-3 bg-[#3B82F6] text-white font-medium rounded-md hover:bg-[#2563EB] transition-colors duration-200"
               onClick={closeAllMenus}
             >
               Contacto
-            </a>
+            </Link>
           </div>
         </div>
       </div>
