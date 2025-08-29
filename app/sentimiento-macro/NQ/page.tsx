@@ -21,9 +21,6 @@ interface ApiResponseData {
   actualValue: number | null;
   forecastValue?: number | null; // Hacer forecastValue opcional
   error?: string;
-  // Propiedades adicionales para COT que no tienen forecastValue
-  longChange?: number | null;
-  shortChange?: number | null;
 }
 
 // Componente para el tooltip con dirección personalizable
@@ -91,8 +88,6 @@ const TableRow: React.FC<{
     "Inflación": "Aumento general de precios. Alta inflación es negativa para el Nasdaq porque puede llevar a la Fed a subir tasas de interés, lo que reduce el valor presente de los flujos futuros de las empresas tecnológicas.",
     "Tasa de Desempleo": "Porcentaje de la fuerza laboral desempleada. Un desempleo bajo generalmente es positivo, pero demasiado bajo puede generar presiones inflacionarias.",
     "Tasa de Interés": "Tasa establecida por la Fed. Tasas bajas benefician al Nasdaq porque hacen que las acciones de crecimiento (como las tecnológicas) sean más atractivas frente a los bonos.",
-    "Sentimiento COT Large Speculators": "Posicionamiento de los grandes especuladores en futuros del Nasdaq. Un valor positivo alto sugiere expectativas alcistas por parte de actores institucionales.",
-    "Sentimiento COT Small Traders": "Posicionamiento de pequeños traders en futuros del Nasdaq. Suele ser un indicador contrario: cuando los pequeños traders son muy alcistas, puede ser señal de mercado sobrecomprado.",
     "Sentimiento de las 7 Magníficas": "Análisis de precio de las 7 acciones tecnológicas más grandes (Apple, Microsoft, Amazon, etc.). Representa la salud del sector tecnológico.",
     "Estacionalidad": "Tendencia histórica del Nasdaq durante el mes actual. Basado en datos de los últimos 10 años.",
     "Gráfica Diaria": "Si el precio actual en gráfica de 1 día está arriba de la EMA de 20, 50 y 200 entonces es tendencia alcista. Si está el precio en medio de las EMAs es tendencia neutra. Si el precio actual está por debajo de las 3 EMAs es tendencia bajista."
@@ -121,9 +116,8 @@ const TableRow: React.FC<{
           {data.variable}
         </Tooltip>
       </td>
-      {/* Lógica para unificar celdas de Valor Actual y Previsión para Sentimiento COT, 7 Magníficas y Estacionalidad */}
-      {data.variable === "Sentimiento COT Large Speculators" ||
-      data.variable === "Sentimiento COT Small Traders" ||
+      {/* Lógica para unificar celdas de Valor Actual y Previsión para 7 Magníficas y Estacionalidad */}
+      {
       data.variable === "Sentimiento de las 7 Magníficas" ||
       data.variable === "Estacionalidad" ||
       data.variable === "Gráfica Diaria" ? (
@@ -185,8 +179,6 @@ const TableRow: React.FC<{
       >
         {data.actualValue !== null &&
         ((data.forecastValue !== null && data.forecastValue !== undefined) ||
-          data.variable === "Sentimiento COT Large Speculators" ||
-          data.variable === "Sentimiento COT Small Traders" ||
           data.variable === "Sentimiento de las 7 Magníficas" ||
           data.variable === "Estacionalidad" ||
           data.variable === "Gráfica Diaria")
@@ -307,24 +299,6 @@ const NasdaqSentimentTable: React.FC = () => {
       // Datos de Sentimiento
       {
         category: "SENTIMIENTO",
-        variable: "Sentimiento COT Large Speculators",
-        actualValue: null, // Ahora se obtiene de la API
-        forecastValue: undefined,
-        unit: "%",
-        source: "https://insider-week.com/en/cot/", // Fuente estática
-        isNegativeForNasdaq: false,
-      },
-      {
-        category: "SENTIMIENTO",
-        variable: "Sentimiento COT Small Traders",
-        actualValue: null, // Ahora se obtiene de la API
-        forecastValue: undefined,
-        unit: "%",
-        source: "https://insider-week.com/en/cot/", // Fuente estática
-        isNegativeForNasdaq: false,
-      },
-      {
-        category: "SENTIMIENTO",
         variable: "Sentimiento de las 7 Magníficas",
         actualValue: null, // Valor temporal, se actualizará con el score total
         forecastValue: undefined, // No hay previsión
@@ -371,23 +345,6 @@ const NasdaqSentimentTable: React.FC = () => {
 
   // Función para calcular la puntuación de una variable
   const calculateScore = useCallback((data: MacroEconomicData): number => {
-    // Lógica especial para Sentimiento COT (Large Speculators)
-    if (data.variable === "Sentimiento COT Large Speculators") {
-      if (data.actualValue === null) return 0;
-      if (data.actualValue > 10) return 1;
-      if (data.actualValue < -10) return -1;
-      return 0;
-    }
-
-    // Lógica especial para Sentimiento COT Small Traders
-    if (data.variable === "Sentimiento COT Small Traders") {
-      if (data.actualValue === null) return 0;
-      // Tus criterios: 1 si < -10%, -1 si > 10%, 0 si entre -10% y +10%
-      if (data.actualValue < -10) return 1; // Bajista Small Traders -> Alcista para índice (contrario)
-      if (data.actualValue > 10) return -1; // Alcista Small Traders -> Bajista para índice (contrario)
-      return 0; // Neutral
-    }
-
     // Lógica especial para Sentimiento de las 7 Magníficas
     if (data.variable === "Sentimiento de las 7 Magníficas") {
       if (data.actualValue === null) return 0;
@@ -479,8 +436,6 @@ const NasdaqSentimentTable: React.FC = () => {
         fetchData("/api/scrape-inflation", "Inflación"),
         fetchData("/api/scrape-unemployment-rate", "Tasa de Desempleo"),
         fetchData("/api/scrape-interest-rate", "Tasa de Interés"),
-        fetchData("/api/scrape-cot-nasdaq", "Sentimiento COT Large Speculators"),
-        fetchData("/api/scrape-cot-nasdaq-small-traders", "Sentimiento COT Small Traders"),
         fetchData(
           "/api/scrape-magnificent7-sentiment",
           "Sentimiento de las 7 Magníficas"
@@ -492,16 +447,7 @@ const NasdaqSentimentTable: React.FC = () => {
       results.forEach((result) => {
         if (result.status === "fulfilled" && result.value) {
           const { variable, actualValue, forecastValue } = result.value;
-
-          let targetVariable = variable;
-
-          if (variable === "Sentimiento COT del Nasdaq") {
-              targetVariable = "Sentimiento COT Large Speculators";
-          } else if (variable === "Sentimiento COT Small Traders") {
-              targetVariable = "Sentimiento COT Small Traders";
-          }
-
-
+          const targetVariable = variable;
           let finalActualValue = actualValue;
           if (
             targetVariable === "Sentimiento de las 7 Magníficas" &&
@@ -557,10 +503,7 @@ const NasdaqSentimentTable: React.FC = () => {
   // Calcula el total de la puntuación
   const totalScore = useMemo(() => {
     return macroEconomicData.reduce((sum, data) => {
-      // Para Sentimiento COT Large Speculators, Sentimiento COT Small Traders, Sentimiento de las 7 Magníficas, Estacionalidad y Gráfica Diaria, usa la lógica de puntuación especial
       if (
-        data.variable === "Sentimiento COT Large Speculators" ||
-        data.variable === "Sentimiento COT Small Traders" ||
         data.variable === "Sentimiento de las 7 Magníficas" ||
         data.variable === "Estacionalidad" ||
         data.variable === "Gráfica Diaria"

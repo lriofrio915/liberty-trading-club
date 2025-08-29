@@ -35,9 +35,9 @@ export async function GET() {
     // Para depuración: console.log("Texto completo de la página (primeros 500 caracteres):", pageText.substring(0, 500));
 
     // Expresión regular para encontrar el valor actual:
-    // Busca "grew an annualized X%" o "rose X%" o "increased X%"
+    // Ahora incluye "grew at an annual rate of", "expanded", "expanded at an annual rate of"
     const actualMatch = pageText.match(
-      /(?:grew an annualized|rose|increased)\s+([\d.]+?)%/i
+      /(?:grew an annualized|grew at an annual rate of|rose|increased|expanded|expanded at an annual rate of)\s+([\d.]+?)%/i
     );
     if (actualMatch && actualMatch[1]) {
       actualValue = parseFloat(actualMatch[1]);
@@ -45,9 +45,9 @@ export async function GET() {
     }
 
     // Expresión regular para encontrar la previsión:
-    // Busca "expectations of a X%" o "forecast of a X%" o "beating expectations of a X%"
+    // Ahora incluye "estimate of", "first estimate of", "second estimate of", "final estimate of", "projected at", "anticipated at"
     const forecastMatch = pageText.match(
-      /(?:expectations of a|forecast of a|beating expectations of a)\s+([\d.]+?)%/i
+      /(?:expectations of a|forecast of a|beating expectations of a|estimate of|first estimate of|second estimate of|final estimate of|projected at|anticipated at)\s+([\d.]+?)%/i
     );
     if (forecastMatch && forecastMatch[1]) {
       forecastValue = parseFloat(forecastMatch[1]);
@@ -72,7 +72,7 @@ export async function GET() {
             values[2].replace("%", "").replace(",", ".")
           );
         }
-        return false;
+        return false; // Salir del .each() una vez que se encuentra la fila
       }
     });
 
@@ -81,22 +81,23 @@ export async function GET() {
         "No se pudieron encontrar ambos valores (actual y previsión) para el PIB."
       );
       return NextResponse.json<ScrapedData>( // Tipado explícito de la respuesta
-        { 
+        {
           error: "No se pudieron extraer los datos de Crecimiento del PIB.",
           variable: "Crecimiento del PIB", // Proporcionar todas las propiedades de ScrapedData
           actualValue: null,
-          forecastValue: null 
+          forecastValue: null,
         },
         { status: 404 }
       );
     }
 
-    return NextResponse.json<ScrapedData>({ // Tipado explícito de la respuesta
+    return NextResponse.json<ScrapedData>({
+      // Tipado explícito de la respuesta
       variable: "Crecimiento del PIB",
       actualValue,
       forecastValue,
     });
-  } catch (error: unknown) { // Cambiado 'any' a 'unknown'
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error); // Manejo seguro del tipo 'unknown'
     console.error("Error al hacer scraping del PIB:", errorMessage);
     return NextResponse.json<ScrapedData>( // Tipado explícito de la respuesta
@@ -104,7 +105,7 @@ export async function GET() {
         error: `Fallo al obtener datos de Crecimiento del PIB: ${errorMessage}`,
         variable: "Crecimiento del PIB", // Proporcionar todas las propiedades de ScrapedData
         actualValue: null,
-        forecastValue: null
+        forecastValue: null,
       },
       { status: 500 }
     );

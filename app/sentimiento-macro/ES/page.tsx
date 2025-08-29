@@ -21,9 +21,6 @@ interface ApiResponseData {
   actualValue: number | null;
   forecastValue?: number | null; // Hacer forecastValue opcional
   error?: string;
-  // Propiedades adicionales para COT que no tienen forecastValue
-  longChange?: number | null;
-  shortChange?: number | null;
 }
 
 // Componente para el tooltip con dirección personalizable
@@ -109,10 +106,6 @@ const TableRow: React.FC<{
       "Porcentaje de la fuerza laboral desempleada. Un desempleo bajo generalmente es positivo, pero demasiado bajo puede generar presiones inflacionarias.",
     "Tasa de Interés":
       "Tasa establecida por la Fed. Tasas bajas benefician al S&P 500 porque reducen el costo de los préstamos para las empresas y hacen que el rendimiento de los bonos sea menos atractivo.",
-    "Sentimiento COT Large Speculators":
-      "Posicionamiento de los grandes especuladores en futuros del S&P 500. Un valor positivo alto sugiere expectativas alcistas por parte de actores institucionales.",
-    "Sentimiento COT Small Traders":
-      "Posicionamiento de pequeños traders en futuros del S&P 500. Suele ser un indicador contrario: cuando los pequeños traders son muy alcistas, puede ser señal de mercado sobrecomprado.",
     "Sentimiento de las 7 Magníficas":
       "Análisis de precio de las 7 acciones tecnológicas más grandes (Apple, Microsoft, Amazon, etc.). Su influencia se extiende al S&P 500 dada su capitalización de mercado.",
     Estacionalidad:
@@ -153,8 +146,7 @@ const TableRow: React.FC<{
         </Tooltip>
       </td>
       {/* Lógica para unificar celdas de Valor Actual y Previsión para Sentimiento COT, 7 Magníficas y Estacionalidad */}
-      {data.variable === "Sentimiento COT Large Speculators" ||
-      data.variable === "Sentimiento COT Small Traders" ||
+      {
       data.variable === "Sentimiento de las 7 Magníficas" ||
       data.variable === "Estacionalidad" ||
       data.variable === "Gráfica Diaria" ? (
@@ -224,8 +216,6 @@ const TableRow: React.FC<{
       >
         {data.actualValue !== null &&
         ((data.forecastValue !== null && data.forecastValue !== undefined) ||
-          data.variable === "Sentimiento COT Large Speculators" ||
-          data.variable === "Sentimiento COT Small Traders" ||
           data.variable === "Sentimiento de las 7 Magníficas" ||
           data.variable === "Estacionalidad" ||
           data.variable === "Gráfica Diaria")
@@ -359,24 +349,6 @@ const SP500SentimentTable: React.FC = () => {
       // Datos de Sentimiento
       {
         category: "SENTIMIENTO",
-        variable: "Sentimiento COT Large Speculators",
-        actualValue: null, // Ahora se obtiene de la API
-        forecastValue: undefined,
-        unit: "%",
-        source: "https://insider-week.com/en/cot/",
-        isNegativeForNasdaq: false,
-      },
-      {
-        category: "SENTIMIENTO",
-        variable: "Sentimiento COT Small Traders",
-        actualValue: null, // Ahora se obtiene de la API
-        forecastValue: undefined,
-        unit: "%",
-        source: "https://insider-week.com/en/cot/",
-        isNegativeForNasdaq: false,
-      },
-      {
-        category: "SENTIMIENTO",
         variable: "Sentimiento de las 7 Magníficas",
         actualValue: null, // Valor temporal, se actualizará con el score total
         forecastValue: undefined,
@@ -419,22 +391,6 @@ const SP500SentimentTable: React.FC = () => {
 
   // Función para calcular la puntuación de una variable
   const calculateScore = useCallback((data: MacroEconomicData): number => {
-    // Lógica especial para Sentimiento COT (Large Speculators)
-    if (data.variable === "Sentimiento COT Large Speculators") {
-      if (data.actualValue === null) return 0;
-      if (data.actualValue > 10) return 1;
-      if (data.actualValue < -10) return -1;
-      return 0;
-    }
-
-    // Lógica especial para Sentimiento COT Small Traders
-    if (data.variable === "Sentimiento COT Small Traders") {
-      if (data.actualValue === null) return 0;
-      if (data.actualValue < -10) return 1;
-      if (data.actualValue > 10) return -1;
-      return 0;
-    }
-
     // Lógica especial para Sentimiento de las 7 Magníficas
     if (data.variable === "Sentimiento de las 7 Magníficas") {
       if (data.actualValue === null) return 0;
@@ -525,11 +481,6 @@ const SP500SentimentTable: React.FC = () => {
         fetchData("/api/scrape-inflation", "Inflación"),
         fetchData("/api/scrape-unemployment-rate", "Tasa de Desempleo"),
         fetchData("/api/scrape-interest-rate", "Tasa de Interés"),
-        fetchData("/api/scrape-cot-sp500", "Sentimiento COT Large Speculators"), // API para S&P 500 Large Speculators
-        fetchData(
-          "/api/scrape-cot-sp500-small-traders",
-          "Sentimiento COT Small Traders"
-        ), // API para S&P 500 Small Traders
         fetchData(
           "/api/scrape-magnificent7-sentiment",
           "Sentimiento de las 7 Magníficas"
@@ -541,19 +492,9 @@ const SP500SentimentTable: React.FC = () => {
       results.forEach((result) => {
         if (result.status === "fulfilled" && result.value) {
           const { variable, actualValue, forecastValue } = result.value;
-
-          let targetVariable = variable;
-
-          // Mapear los nombres de las variables de la API a los nombres de la tabla si es necesario
-          if (variable === "Sentimiento COT Large Speculators") {
-            // From the new API
-            targetVariable = "Sentimiento COT Large Speculators";
-          } else if (variable === "Sentimiento COT Small Traders") {
-            // From the new API
-            targetVariable = "Sentimiento COT Small Traders";
-          }
-
+          const targetVariable = variable;
           let finalActualValue = actualValue;
+
           if (
             targetVariable === "Sentimiento de las 7 Magníficas" &&
             actualValue !== null
@@ -613,8 +554,6 @@ const SP500SentimentTable: React.FC = () => {
   const totalScore = useMemo(() => {
     return macroEconomicData.reduce((sum, data) => {
       if (
-        data.variable === "Sentimiento COT Large Speculators" ||
-        data.variable === "Sentimiento COT Small Traders" ||
         data.variable === "Sentimiento de las 7 Magníficas" ||
         data.variable === "Estacionalidad" ||
         data.variable === "Gráfica Diaria"
