@@ -1,5 +1,13 @@
 // types/api.ts
 
+// Interfaces de Portafolio
+// =====================================
+export interface Portfolio {
+  name: string;
+  slug: string;
+  tickers: string[];
+}
+
 // =====================================
 // 1. Tipos Auxiliares (Primitivas)
 // =====================================

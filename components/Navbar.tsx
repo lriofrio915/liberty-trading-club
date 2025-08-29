@@ -1,4 +1,3 @@
-// components/Navbar.tsx
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -14,11 +13,11 @@ import {
 } from "@heroicons/react/24/outline";
 import AddPortfolioForm from "../components/AddPortfolioForm/AddPortfolioForm";
 
-// Define una interfaz para la estructura de cada portafolio
+// Define la interfaz para la estructura de cada portafolio
 interface Portfolio {
-  name: string; // Ej: "Nombre Apellido"
-  slug: string; // Ej: "nombre-apellido"
-  tickers: string[]; // Añadimos los tickers aquí
+  name: string;
+  slug: string;
+  tickers: string[];
 }
 
 export default function Navbar() {
@@ -37,7 +36,7 @@ export default function Navbar() {
   // Carga los portafolios desde localStorage al cargar el componente
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedPortfolios = localStorage.getItem("portafolios");
+      const savedPortfolios = localStorage.getItem("portfolios"); // Corregido: clave 'portfolios'
       if (savedPortfolios) {
         try {
           const parsedPortfolios: Portfolio[] = JSON.parse(savedPortfolios);
@@ -47,19 +46,22 @@ export default function Navbar() {
             "Error al parsear los portafolios de localStorage:",
             error
           );
-          setPortfolios([]); // Reinicia si hay un error de parseo
+          setPortfolios([]);
         }
       }
     }
   }, []);
 
+  // Función para cerrar todos los menús y modales
   const closeAllMenus = useCallback(() => {
     setIsMobileMenuOpen(false);
     setOpenDropdown(null);
     setOpenSubDropdown(null);
     setIsCoursesModalOpen(false);
+    setIsFormOpen(false);
   }, []);
 
+  // Alterna la visibilidad de los menús desplegables principales
   const toggleDropdown = (dropdownName: string) => {
     setOpenDropdown(openDropdown === dropdownName ? null : dropdownName);
     setOpenSubDropdown(null);
@@ -69,19 +71,22 @@ export default function Navbar() {
     if (isCoursesModalOpen) {
       setIsCoursesModalOpen(false);
     }
+    if (isFormOpen) {
+      setIsFormOpen(false);
+    }
   };
 
+  // Alterna la visibilidad de los sub-menús desplegables
   const toggleSubDropdown = (subDropdownName: string) => {
     setOpenSubDropdown(
       openSubDropdown === subDropdownName ? null : subDropdownName
     );
   };
 
+  // Maneja los clics fuera de los menús y modales para cerrarlos
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-
-      // No cerrar si el clic es dentro de la barra de navegación o los modales
       if (
         (navbarRef.current && navbarRef.current.contains(target)) ||
         (coursesModalRef.current && coursesModalRef.current.contains(target)) ||
@@ -90,7 +95,6 @@ export default function Navbar() {
         return;
       }
       closeAllMenus();
-      setIsFormOpen(false); // Cierra el formulario si se hace clic fuera
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -98,6 +102,7 @@ export default function Navbar() {
     };
   }, [closeAllMenus]);
 
+  // Controla el overflow del body cuando los menús o modales están abiertos
   useEffect(() => {
     document.body.style.overflow =
       isMobileMenuOpen || isFormOpen || isCoursesModalOpen ? "hidden" : "";
@@ -106,7 +111,7 @@ export default function Navbar() {
     };
   }, [isMobileMenuOpen, isFormOpen, isCoursesModalOpen]);
 
-  // Maneja la apertura del formulario
+  // Maneja la apertura del formulario de agregar portafolio
   const handleOpenForm = () => {
     closeAllMenus();
     setIsFormOpen(true);
@@ -116,13 +121,12 @@ export default function Navbar() {
   const handlePortfolioAdded = (newPortfolio: Portfolio) => {
     setPortfolios((prevPortfolios) => {
       const updatedPortfolios = [...prevPortfolios, newPortfolio];
-      // Guarda la lista actualizada de portafolios en localStorage
-      localStorage.setItem("portafolios", JSON.stringify(updatedPortfolios));
+      localStorage.setItem("portfolios", JSON.stringify(updatedPortfolios)); // Corregido: clave 'portfolios'
       return updatedPortfolios;
     });
   };
 
-  // Maneja el cierre del formulario
+  // Maneja el cierre del formulario de agregar portafolio
   const handleCloseForm = () => {
     setIsFormOpen(false);
   };
@@ -157,6 +161,7 @@ export default function Navbar() {
         className="fixed top-0 left-0 w-full bg-[#0A2342] py-4 text-white shadow-lg z-50"
       >
         <div className="container mx-auto flex justify-between items-center px-4 md:px-6">
+          {/* Logo */}
           <Link
             href="/"
             className="flex items-center hover:opacity-80 transition-opacity duration-200"
@@ -171,6 +176,7 @@ export default function Navbar() {
             />
           </Link>
 
+          {/* Botón de Menú Móvil */}
           <div className="md:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -185,6 +191,7 @@ export default function Navbar() {
             </button>
           </div>
 
+          {/* Menú de Navegación para Escritorio */}
           <div className="hidden md:flex space-x-6 items-center">
             {/* Menú de Estrategias */}
             <div className="relative">
@@ -531,27 +538,6 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Sesgo Diario */}
-            <div className="border-b border-gray-700 pb-2">
-              <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
-                Sesgo Diario:
-              </span>
-              <Link
-                href="/sentimiento-macro/NQ"
-                className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
-                onClick={closeAllMenus}
-              >
-                Nasdaq
-              </Link>
-              <Link
-                href="/sentimiento-macro/ES"
-                className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
-                onClick={closeAllMenus}
-              >
-                S&P 500
-              </Link>
-            </div>
-
             {/* Menú de Invertir (móvil) */}
             <div className="border-b border-gray-700 pb-2">
               <span className="block text-gray-400 text-sm font-semibold px-3 py-2">
@@ -680,10 +666,7 @@ export default function Navbar() {
           </div>
         )}
       </nav>
-      {/* Añadimos una validación para asegurarnos de que formRef.current 
-        no sea nulo antes de pasarlo al componente.
-      */}
-      {isFormOpen && formRef.current && (
+      {isFormOpen && (
         <AddPortfolioForm
           onClose={handleCloseForm}
           onPortfolioAdded={handlePortfolioAdded}

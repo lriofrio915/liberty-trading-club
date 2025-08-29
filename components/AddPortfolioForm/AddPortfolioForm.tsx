@@ -1,28 +1,22 @@
-// components/AddPortfolioForm/AddPortfolioForm.tsx
 "use client";
 
 import { useState, FormEvent, RefObject } from "react";
 import { useRouter } from "next/navigation";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-
-interface Portfolio {
-  name: string;
-  slug: string;
-  tickers: string[];
-}
+// Asegúrate de que la ruta de importación coincida con tu estructura de archivos
+import { Portfolio } from "../../types/api";
 
 interface AddPortfolioFormProps {
   onClose: () => void;
   onPortfolioAdded: (portfolio: Portfolio) => void;
-  // **Añade `| null` a la definición del tipo aquí.**
   formRef: RefObject<HTMLDivElement | null>;
 }
 
-export default function AddPortfolioForm({
+const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
   onClose,
   onPortfolioAdded,
   formRef,
-}: AddPortfolioFormProps) {
+}) => {
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [tickers, setTickers] = useState("");
@@ -123,4 +117,6 @@ export default function AddPortfolioForm({
       </div>
     </div>
   );
-}
+};
+
+export default AddPortfolioForm;
