@@ -1,67 +1,132 @@
-// app/portafolio/[operador]/page.tsx
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation"; // Importa useRouter
+import { useParams, useRouter } from "next/navigation";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
   TrashIcon,
   PlusCircleIcon,
-  ExclamationCircleIcon, // Nuevo icono para el modal de confirmación
+  ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
 
-// Definimos la interfaz para los datos de cada activo
-interface AssetData {
-  ticker: string;
-  name: string;
-  sector: string;
-  industry: string;
-  price: number | null;
-  dailyChange: number | null;
-  error?: string; // Para manejar errores individuales por activo
-}
-
-// Definimos la interfaz para la estructura de cada elemento de la API
-interface ApiAssetItem {
-  ticker: string;
-  data: {
-    price?: {
-      longName?: string;
-      symbol?: string;
-      regularMarketPrice?: number;
-      regularMarketChangePercent?: number;
-    };
-    assetProfile?: {
-      sector?: string;
-      industry?: string;
-    };
-  };
-}
-
-// Interfaz para la estructura del portafolio, consistente con Navbar y AddPortfolioForm
-interface Portfolio {
-  name: string;
-  slug: string;
-  tickers: string[];
-}
+// Importamos las interfaces desde el archivo centralizado
+import { Portfolio, AssetData, ApiAssetItem } from "../../../types/api";
+import Link from "next/link";
 
 export default function PortfolioPage() {
   const params = useParams();
-  const router = useRouter(); // Inicializa el router
+  const router = useRouter();
   const operadorSlug = params.operador as string;
 
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
-  const [currentTickers, setCurrentTickers] = useState<string[]>([]);
   const [assets, setAssets] = useState<AssetData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"none" | "sector" | "industry">("none");
   const [newTickerInput, setNewTickerInput] = useState<string>("");
   const [addingTicker, setAddingTicker] = useState<boolean>(false);
-  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false); // Estado para el modal de confirmación
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
-  // Carga los datos iniciales del portafolio al montar el componente
+  // Helper para normalizar valores de la API que pueden ser un objeto o un número
+  const normalizeValue = useCallback(
+    <T,>(value: T | { raw: T } | null | undefined): T | null => {
+      if (value === null || typeof value === "undefined") {
+        return null;
+      }
+      if (
+        typeof value === "object" &&
+        "raw" in value &&
+        typeof value.raw !== "undefined"
+      ) {
+        return value.raw as T;
+      }
+      return value as T;
+    },
+    []
+  );
+
+  const fetchSingleAssetData = useCallback(
+    async (ticker: string): Promise<AssetData> => {
+      try {
+        const response = await fetch(`/api/stocks?tickers=${ticker}`);
+        if (!response.ok) {
+          throw new Error(`Fallo al obtener los datos para ${ticker}.`);
+        }
+        const apiResponse = await response.json();
+
+        if (
+          !apiResponse.success ||
+          !apiResponse.data ||
+          apiResponse.data.length === 0
+        ) {
+          return {
+            ticker,
+            name: "N/A",
+            sector: "N/A",
+            industry: "N/A",
+            price: null,
+            dailyChange: null,
+            error:
+              apiResponse.message || `No se encontraron datos para ${ticker}.`,
+          };
+        }
+
+        const assetItem: ApiAssetItem = apiResponse.data[0];
+        const priceData = assetItem.data?.price;
+        const assetProfileData = assetItem.data?.assetProfile;
+
+        const name =
+          priceData?.longName || priceData?.symbol || assetItem.ticker;
+        const sector = assetProfileData?.sector || "N/A";
+        const industry = assetProfileData?.industry || "N/A";
+        const price = normalizeValue<number>(priceData?.regularMarketPrice);
+        const dailyChange = normalizeValue<number>(
+          priceData?.regularMarketChangePercent
+        );
+
+        return {
+          ticker: assetItem.ticker,
+          name: name,
+          sector: sector,
+          industry: industry,
+          price: price,
+          dailyChange: dailyChange,
+        };
+      } catch (err: unknown) {
+        console.error(`Error al obtener datos de ${ticker}:`, err);
+        return {
+          ticker,
+          name: "N/A",
+          sector: "N/A",
+          industry: "N/A",
+          price: null,
+          dailyChange: null,
+          error: err instanceof Error ? err.message : "Error desconocido.",
+        };
+      }
+    },
+    [normalizeValue]
+  );
+
+  const fetchPortfolioData = useCallback(
+    async (tickers: string[]) => {
+      setLoading(true);
+      setError(null);
+      if (tickers.length === 0) {
+        setAssets([]);
+        setLoading(false);
+        return;
+      }
+      const fetchedAssets = await Promise.all(
+        tickers.map((ticker) => fetchSingleAssetData(ticker))
+      );
+      setAssets(fetchedAssets);
+      setLoading(false);
+    },
+    [fetchSingleAssetData]
+  );
+
   useEffect(() => {
     if (typeof window !== "undefined" && operadorSlug) {
       const savedPortfolios = localStorage.getItem("portfolios");
@@ -74,7 +139,7 @@ export default function PortfolioPage() {
 
           if (foundPortfolio) {
             setPortfolio(foundPortfolio);
-            setCurrentTickers(foundPortfolio.tickers);
+            fetchPortfolioData(foundPortfolio.tickers);
           } else {
             setError("Portafolio no encontrado para este operador.");
             setLoading(false);
@@ -92,94 +157,10 @@ export default function PortfolioPage() {
         setLoading(false);
       }
     }
-  }, [operadorSlug]);
-
-  // Función para obtener los datos de un solo ticker desde la API
-  const fetchSingleAssetData = useCallback(async (ticker: string) => {
-    try {
-      const response = await fetch(`/api/stocks?tickers=${ticker}`);
-      if (!response.ok) {
-        throw new Error(`Fallo al obtener los datos para ${ticker}.`);
-      }
-      const apiResponse = await response.json();
-
-      if (
-        apiResponse.success === false ||
-        !apiResponse.data ||
-        apiResponse.data.length === 0
-      ) {
-        return {
-          ticker,
-          error:
-            apiResponse.message || `No se encontraron datos para ${ticker}.`,
-        };
-      }
-
-      const assetItem: ApiAssetItem = apiResponse.data[0];
-      const priceData = assetItem.data?.price;
-      const assetProfileData = assetItem.data?.assetProfile;
-
-      const name = priceData?.longName || priceData?.symbol || assetItem.ticker;
-      const sector = assetProfileData?.sector || "N/A";
-      const industry = assetProfileData?.industry || "N/A";
-      const price = priceData?.regularMarketPrice ?? null;
-      const dailyChange = priceData?.regularMarketChangePercent ?? null;
-
-      return {
-        ticker: assetItem.ticker,
-        name: name,
-        sector: sector,
-        industry: industry,
-        price: price,
-        dailyChange: dailyChange,
-      };
-    } catch (err: unknown) {
-      console.error(`Error al obtener datos de ${ticker}:`, err);
-      return {
-        ticker,
-        error: err instanceof Error ? err.message : "Error desconocido.",
-      };
-    }
-  }, []);
-
-  // Función para obtener los datos de todo el portafolio
-  const fetchPortfolioData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      if (currentTickers.length === 0) {
-        setAssets([]);
-        setLoading(false);
-        return;
-      }
-      const fetchedAssets = await Promise.all(
-        currentTickers.map((ticker) => fetchSingleAssetData(ticker))
-      );
-      setAssets(fetchedAssets.filter((asset) => !asset.error) as AssetData[]);
-    } catch (err: unknown) {
-      console.error("Error al obtener datos del portafolio:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "No se pudieron cargar los datos del portafolio. Por favor, inténtalo de nuevo más tarde."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [currentTickers, fetchSingleAssetData]);
-
-  // Vuelve a cargar los datos de los tickers cada vez que cambia la lista currentTickers
-  useEffect(() => {
-    if (portfolio && currentTickers.length > 0) {
-      fetchPortfolioData();
-    } else if (portfolio && currentTickers.length === 0) {
-      setAssets([]);
-      setLoading(false);
-    }
-  }, [portfolio, currentTickers, fetchPortfolioData]);
+  }, [operadorSlug, fetchPortfolioData]);
 
   const sortedAssets = useMemo(() => {
-    const sortableAssets = [...assets];
+    const sortableAssets = [...assets].filter((asset) => !asset.error);
     if (sortBy === "sector") {
       return sortableAssets.sort((a, b) => {
         if (!a.sector || a.sector === "N/A") return 1;
@@ -193,7 +174,7 @@ export default function PortfolioPage() {
         return a.industry.localeCompare(b.industry);
       });
     }
-    return assets;
+    return sortableAssets;
   }, [assets, sortBy]);
 
   const toggleSortBySector = () => {
@@ -206,9 +187,9 @@ export default function PortfolioPage() {
 
   const getPriceColor = (change: number | null) => {
     if (change === null) return "text-gray-500";
-    return change * 100 > 0
+    return change > 0
       ? "text-green-600"
-      : change * 100 < 0
+      : change < 0
       ? "text-red-600"
       : "text-gray-500";
   };
@@ -243,30 +224,25 @@ export default function PortfolioPage() {
     e.preventDefault();
     const tickerToAdd = newTickerInput.trim().toUpperCase();
 
-    // Modificación aquí: Mensaje de error más específico
     if (!tickerToAdd) {
       setError("Por favor, introduce un ticker para añadir.");
       return;
     }
-    if (currentTickers.includes(tickerToAdd)) {
+
+    if (portfolio?.tickers.includes(tickerToAdd)) {
       setError("Este ticker ya está en la lista.");
       return;
     }
 
     setAddingTicker(true);
-    setError(null); // Limpia cualquier error anterior
+    setError(null);
 
     const newAssetData = await fetchSingleAssetData(tickerToAdd);
 
     if (newAssetData.error) {
       setError(newAssetData.error);
     } else {
-      const updatedTickers = [...currentTickers, tickerToAdd];
-      setCurrentTickers(updatedTickers);
-      setAssets((prevAssets) => [...prevAssets, newAssetData as AssetData]);
-      setNewTickerInput("");
-
-      // Actualizar localStorage con los nuevos tickers para este portafolio
+      const updatedTickers = [...(portfolio?.tickers || []), tickerToAdd];
       if (portfolio) {
         const updatedPortfolio: Portfolio = {
           ...portfolio,
@@ -275,27 +251,26 @@ export default function PortfolioPage() {
         setPortfolio(updatedPortfolio);
         updatePortfoliosInLocalStorage(updatedPortfolio);
       }
+      setAssets((prevAssets) => [...prevAssets, newAssetData as AssetData]);
+      setNewTickerInput("");
     }
     setAddingTicker(false);
   };
 
   const handleDeleteTicker = (tickerToDelete: string) => {
-    const updatedTickers = currentTickers.filter(
-      (ticker) => ticker !== tickerToDelete
-    );
-    setCurrentTickers(updatedTickers);
-    setAssets((prevAssets) =>
-      prevAssets.filter((asset) => asset.ticker !== tickerToDelete)
-    );
-
-    // Actualizar localStorage con los tickers eliminados para este portafolio
     if (portfolio) {
+      const updatedTickers = portfolio.tickers.filter(
+        (ticker) => ticker !== tickerToDelete
+      );
       const updatedPortfolio: Portfolio = {
         ...portfolio,
         tickers: updatedTickers,
       };
       setPortfolio(updatedPortfolio);
       updatePortfoliosInLocalStorage(updatedPortfolio);
+      setAssets((prevAssets) =>
+        prevAssets.filter((asset) => asset.ticker !== tickerToDelete)
+      );
     }
   };
 
@@ -303,24 +278,20 @@ export default function PortfolioPage() {
     return `/portafolio/${operadorSlug}/${ticker.toLowerCase()}`;
   };
 
-  // Función para abrir el modal de confirmación de eliminación
   const openDeleteConfirmModal = () => {
     setShowConfirmModal(true);
   };
 
-  // Función para cerrar el modal de confirmación
   const closeDeleteConfirmModal = () => {
     setShowConfirmModal(false);
   };
 
-  // Función para eliminar el portafolio
   const confirmDeletePortfolio = () => {
     if (typeof window !== "undefined") {
       const savedPortfolios = localStorage.getItem("portfolios");
       if (savedPortfolios) {
         try {
           const allPortfolios: Portfolio[] = JSON.parse(savedPortfolios);
-          // Filtra el portafolio a eliminar por su slug
           const updatedAllPortfolios = allPortfolios.filter(
             (p) => p.slug !== operadorSlug
           );
@@ -333,13 +304,11 @@ export default function PortfolioPage() {
         }
       }
     }
-    closeDeleteConfirmModal(); // Cierra el modal
-    router.push("/"); // Redirige a la página de inicio
-    // router.refresh(); // Eliminado: router.refresh() no es tan fiable para un refresh completo
-    window.location.reload(); // Agregado: Fuerza un refresco completo de la página para actualizar el Navbar
+    closeDeleteConfirmModal();
+    router.push("/");
+    router.refresh();
   };
 
-  // Muestra un mensaje de carga o error si no hay datos iniciales
   if (loading && !portfolio && !error) {
     return (
       <div className="pt-24 min-h-screen bg-[#0A192F] text-white flex justify-center items-center">
@@ -349,12 +318,19 @@ export default function PortfolioPage() {
   }
 
   if (error && !portfolio) {
-    // Solo muestra el error si no hay portafolio cargado
     return (
       <div className="pt-24 min-h-screen bg-[#0A192F] text-white flex justify-center items-center">
         <p className="text-red-500 text-lg">
           {error || "No se pudo cargar el portafolio."}
         </p>
+      </div>
+    );
+  }
+
+  if (!portfolio && error) {
+    return (
+      <div className="pt-24 min-h-screen bg-[#0A192F] text-white flex justify-center items-center">
+        <p className="text-red-500 text-lg">{error}</p>
       </div>
     );
   }
@@ -373,14 +349,11 @@ export default function PortfolioPage() {
           </p>
         </header>
 
-        {/* --- FORMULARIO PARA AÑADIR TICKERS Y BOTÓN DE ELIMINAR --- */}
         <section className="bg-white rounded-lg shadow-xl p-6 md:p-8 mb-12">
           <h2 className="text-2xl font-bold text-center text-[#0A2342] mb-6">
             Gestionar Activos
           </h2>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
-            {" "}
-            {/* Contenedor para los botones */}
             <form
               onSubmit={handleAddTicker}
               className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full sm:w-auto"
@@ -423,7 +396,6 @@ export default function PortfolioPage() {
                 Añadir Activo
               </button>
             </form>
-            {/* Botón para eliminar el portafolio completo, ahora al lado del formulario */}
             <button
               onClick={openDeleteConfirmModal}
               className="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors duration-200 flex items-center justify-center w-full sm:w-auto"
@@ -432,7 +404,6 @@ export default function PortfolioPage() {
               Eliminar Portafolio
             </button>
           </div>
-          {/* Muestra el error aquí, dentro de la sección del formulario */}
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4 text-center">
               <strong className="font-bold">Error:</strong>
@@ -586,18 +557,12 @@ export default function PortfolioPage() {
                           : "N/A"}
                       </td>
                       <td className="py-4 px-6 text-sm">
-                        {asset.error ? (
-                          <span className="text-red-500 text-xs">
-                            Error de carga
-                          </span>
-                        ) : (
-                          <a
-                            href={getReportPath(asset.ticker)}
-                            className="text-blue-600 hover:text-blue-800 font-medium underline transition-colors duration-200"
-                          >
-                            Ver más
-                          </a>
-                        )}
+                        <Link
+                          href={getReportPath(asset.ticker)}
+                          className="text-blue-600 hover:text-blue-800 font-medium underline transition-colors duration-200"
+                        >
+                          Ver más
+                        </Link>
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-800 flex justify-center items-center">
                         <button
@@ -630,7 +595,6 @@ export default function PortfolioPage() {
         </footer>
       </div>
 
-      {/* Modal de Confirmación de Eliminación */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm relative text-center">

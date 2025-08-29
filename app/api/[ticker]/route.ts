@@ -10,8 +10,14 @@ import {
   HistoricalData,
   YahooFinanceRawValue,
   YahooFinanceDateValue,
-  IncomeStatementHistory, // Importamos IncomeStatementHistory para un tipado más preciso
-} from "@/types/api"; // Importa los tipos necesarios
+  IncomeStatementHistory,
+  RawYahooFinanceCashflowItem,
+  RawYahooFinanceBalanceSheetItem,
+  RawYahooFinanceIncomeStatementItem,
+  YahooFinanceModule,
+  QuoteSummaryCashflowStatementHistory, // Importar si se usa directamente
+  QuoteSummaryBalanceSheetHistory, // Importar si se usa directamente
+} from "@/types/api";
 
 export async function GET(
   request: Request,
@@ -27,7 +33,7 @@ export async function GET(
   }
 
   try {
-    const modulesToFetch = [
+    const modulesToFetch: YahooFinanceModule[] = [
       "price",
       "financialData",
       "summaryDetail",
@@ -37,19 +43,16 @@ export async function GET(
       "balanceSheetHistory",
       "incomeStatementHistory",
       "earningsTrend",
-    ] as any[];
+    ];
 
-    // Usa quoteSummary para obtener la mayoría de los módulos
     const quoteSummaryResult = await yahooFinance.quoteSummary(ticker, {
       modules: modulesToFetch,
     });
 
-    // Obtener datos históricos de precios por separado
     const historicalPriceData = await yahooFinance.historical(ticker, {
-      period1: "2018-01-01", // Puedes ajustar la fecha de inicio según sea necesario
+      period1: "2018-01-01",
     });
 
-    // Se verifica si quoteSummaryResult existe y tiene datos relevantes.
     if (
       !quoteSummaryResult ||
       (!quoteSummaryResult.price && historicalPriceData.length === 0)
@@ -63,16 +66,16 @@ export async function GET(
       );
     }
 
-    // Procesar historial financiero anual
     const financialHistory: FinancialHistoryItem[] = [];
 
     const cashflowStatements =
-      quoteSummaryResult.cashflowStatementHistory?.cashflowStatements || [];
+      (
+        quoteSummaryResult.cashflowStatementHistory as QuoteSummaryCashflowStatementHistory
+      )?.cashflowStatements || [];
     const balanceSheetStatements =
-      quoteSummaryResult.balanceSheetHistory?.balanceSheetStatements || [];
-    // --- CORRECCIÓN FINAL Y DEFINITIVA: Acceso correcto a incomeStatements ---
-    // quoteSummaryResult.incomeStatementHistory es el objeto IncomeStatementHistory,
-    // que contiene el array 'incomeStatements'.
+      (
+        quoteSummaryResult.balanceSheetHistory as QuoteSummaryBalanceSheetHistory
+      )?.balanceSheetStatements || [];
     const incomeStatementHistoryObject =
       quoteSummaryResult.incomeStatementHistory as
         | IncomeStatementHistory
@@ -80,7 +83,6 @@ export async function GET(
     const incomeStatements =
       incomeStatementHistoryObject?.incomeStatements || [];
 
-    // Mapea las declaraciones por año para facilitar la combinación
     const statementsByYear: {
       [year: string]: {
         cashflow?: CashflowStatement;
@@ -89,40 +91,69 @@ export async function GET(
       };
     } = {};
 
-    // Helper function to extract year from endDate, handling both Date and YahooFinanceDateValue
+    // FUNCIÓN GETYEARFROMENDDATE CORREGIDA
     const getYearFromEndDate = (
       endDate: Date | YahooFinanceDateValue | undefined
     ): string | undefined => {
       if (!endDate) return undefined;
-      // Si endDate es un YahooFinanceDateValue, su propiedad 'fmt' ya es la cadena.
-      if (typeof (endDate as YahooFinanceDateValue).fmt === "string") {
-        return (endDate as YahooFinanceDateValue).fmt.substring(0, 4);
-      } else if (endDate instanceof Date) {
-        // Si es un objeto Date
-        return (endDate as Date).getFullYear().toString();
+
+      // Primero verificar si es Date
+      if (endDate instanceof Date) {
+        return endDate.getFullYear().toString();
       }
+
+      // Luego verificar si es YahooFinanceDateValue con 'fmt'
+      if (
+        typeof endDate === "object" &&
+        "fmt" in endDate &&
+        typeof endDate.fmt === "string"
+      ) {
+        return endDate.fmt.substring(0, 4);
+      }
+
+      // Si tiene 'raw' (timestamp)
+      if (
+        typeof endDate === "object" &&
+        "raw" in endDate &&
+        typeof endDate.raw === "number"
+      ) {
+        return new Date(endDate.raw * 1000).getFullYear().toString();
+      }
+
       return undefined;
     };
 
-    // Helper function to convert a raw number to YahooFinanceRawValue format
+    // FUNCIÓN TOYAHOOFINANCERAWVALUE CORREGIDA
     const toYahooFinanceRawValue = (
-      value: number | undefined
+      value: number | YahooFinanceRawValue | undefined
     ): YahooFinanceRawValue | undefined => {
       if (typeof value === "number") {
-        return { raw: value, fmt: value.toLocaleString() }; // Basic formatting, can be improved
+        return { raw: value, fmt: value.toLocaleString() };
+      } else if (value && typeof value === "object" && "raw" in value) {
+        return value;
       }
       return undefined;
     };
 
-    cashflowStatements.forEach((stmt: any) => {
-      // Usamos 'any' temporalmente para acceder a propiedades no tipadas
+    const normalizeEndDate = (
+      endDate: Date | YahooFinanceDateValue
+    ): YahooFinanceDateValue => {
+      if (endDate instanceof Date) {
+        return {
+          raw: Math.floor(endDate.getTime() / 1000),
+          fmt: endDate.toISOString().split("T")[0],
+        };
+      }
+      return endDate;
+    };
+
+    cashflowStatements.forEach((stmt: RawYahooFinanceCashflowItem) => {
       const year = getYearFromEndDate(stmt.endDate);
       if (year) {
-        // Se crea un nuevo objeto que solo incluye las propiedades de CashflowStatement
-        // Y se transforman los números raw a YahooFinanceRawValue
+        const normalizedEndDate = normalizeEndDate(stmt.endDate);
         const cashflowStmt: CashflowStatement = {
           maxAge: stmt.maxAge,
-          endDate: stmt.endDate,
+          endDate: normalizedEndDate,
           freeCashFlow: toYahooFinanceRawValue(stmt.freeCashFlow),
           operatingCashFlow: toYahooFinanceRawValue(stmt.operatingCashFlow),
           capitalExpenditures: toYahooFinanceRawValue(stmt.capitalExpenditures),
@@ -134,15 +165,13 @@ export async function GET(
       }
     });
 
-    balanceSheetStatements.forEach((stmt: any) => {
-      // Usamos 'any' temporalmente
+    balanceSheetStatements.forEach((stmt: RawYahooFinanceBalanceSheetItem) => {
       const year = getYearFromEndDate(stmt.endDate);
       if (year) {
-        // Se crea un nuevo objeto que solo incluye las propiedades de BalanceSheet
-        // Y se transforman los números raw a YahooFinanceRawValue
+        const normalizedEndDate = normalizeEndDate(stmt.endDate);
         const balanceSheetStmt: BalanceSheet = {
           maxAge: stmt.maxAge,
-          endDate: stmt.endDate,
+          endDate: normalizedEndDate,
           totalDebt: toYahooFinanceRawValue(stmt.totalDebt),
           totalStockholderEquity: toYahooFinanceRawValue(
             stmt.totalStockholderEquity
@@ -155,15 +184,13 @@ export async function GET(
       }
     });
 
-    incomeStatements.forEach((stmt: any) => {
-      // Usamos 'any' temporalmente
+    incomeStatements.forEach((stmt: RawYahooFinanceIncomeStatementItem) => {
       const year = getYearFromEndDate(stmt.endDate);
       if (year) {
-        // Se crea un nuevo objeto que solo incluye las propiedades de IncomeStatement
-        // Y se transforman los números raw a YahooFinanceRawValue
+        const normalizedEndDate = normalizeEndDate(stmt.endDate);
         const incomeStatementStmt: IncomeStatement = {
           maxAge: stmt.maxAge,
-          endDate: stmt.endDate,
+          endDate: normalizedEndDate,
           totalRevenue: toYahooFinanceRawValue(stmt.totalRevenue),
           netIncome: toYahooFinanceRawValue(stmt.netIncome),
           grossProfit: toYahooFinanceRawValue(stmt.grossProfit),
@@ -175,9 +202,7 @@ export async function GET(
       }
     });
 
-    // Combina y formatea los datos financieros anuales
     for (const year of Object.keys(statementsByYear).sort().reverse()) {
-      // Ordenar por año descendente
       const { cashflow, balanceSheet } = statementsByYear[year];
 
       const freeCashFlow = cashflow?.freeCashFlow?.raw ?? null;
@@ -201,10 +226,9 @@ export async function GET(
       });
     }
 
-    // Formatear los datos históricos de precios al tipo esperado por el frontend
     const formattedHistoricalData: HistoricalData[] = historicalPriceData.map(
       (item) => ({
-        date: item.date.toISOString().split("T")[0], // Formatear a 'YYYY-MM-DD'
+        date: item.date.toISOString().split("T")[0],
         open: item.open,
         high: item.high,
         low: item.low,
@@ -214,18 +238,15 @@ export async function GET(
       })
     );
 
-    // Formatea la respuesta para que coincida con la estructura ApiAssetItem de tu frontend
     const formattedData = {
       ticker: ticker.toUpperCase(),
       data: {
-        // 'data' debe contener QuoteSummaryData
-        ...quoteSummaryResult, // Esto trae price, financialData, summaryDetail, etc.
-        historical: formattedHistoricalData, // Añade el historial de precios procesado
-        financialHistory: financialHistory, // Añade el historial financiero anual procesado
+        ...quoteSummaryResult,
+        historical: formattedHistoricalData,
+        financialHistory: financialHistory,
       },
     };
 
-    // La respuesta de la API ahora contiene un array de `ApiAssetItem` como `assetData`
     return NextResponse.json({ success: true, assetData: [formattedData] });
   } catch (error) {
     console.error(`Error al obtener datos para ${ticker}:`, error);
