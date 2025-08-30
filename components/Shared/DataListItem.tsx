@@ -1,13 +1,10 @@
 // components/Shared/DataListItem/DataListItem.tsx
-import {
-  formatCurrency,
-  formatPercentage,
-  formatDate,
-} from "../Shared/utils";
+import { YahooFinanceRawValue } from "@/types/api";
+import { formatCurrency, formatPercentage, formatDate } from "../Shared/utils";
 
 interface DataListItemProps {
   label: string;
-  value: string | number | undefined | null;
+  value: string | number | undefined | null | YahooFinanceRawValue;
   format?: "currency" | "percentage" | "number" | "date" | "text";
   currencySymbol?: string;
   highlight?: boolean;
@@ -22,26 +19,43 @@ export default function DataListItem({
 }: DataListItemProps) {
   if (value === null || value === undefined || value === "") return null;
 
-  let formattedValue = value;
+  // Extraer el valor raw si es YahooFinanceRawValue
+  const rawValue =
+    typeof value === "object" && value !== null && "raw" in value
+      ? value.raw
+      : value;
+
+  if (rawValue === null || rawValue === undefined || rawValue === "")
+    return null;
+
+  let formattedValue: string;
 
   switch (format) {
     case "currency":
       formattedValue =
-        typeof value === "number" ? formatCurrency(value, currencySymbol) : "";
+        typeof rawValue === "number"
+          ? formatCurrency(rawValue, currencySymbol)
+          : String(rawValue);
       break;
     case "percentage":
-      formattedValue = typeof value === "number" ? formatPercentage(value) : "";
+      formattedValue =
+        typeof rawValue === "number"
+          ? formatPercentage(rawValue)
+          : String(rawValue);
       break;
     case "number":
       formattedValue =
-        typeof value === "number" ? value.toLocaleString() : value;
+        typeof rawValue === "number"
+          ? rawValue.toLocaleString()
+          : String(rawValue);
       break;
     case "date":
-      formattedValue = typeof value === "number" ? formatDate(value) : "";
+      formattedValue =
+        typeof rawValue === "number" ? formatDate(rawValue) : String(rawValue);
       break;
     case "text":
     default:
-      formattedValue = String(value);
+      formattedValue = String(rawValue);
       break;
   }
 

@@ -1,6 +1,7 @@
 // components/AnalystPerspectives/AnalystPerspectives.tsx
 import { ApiAssetItem } from "@/types/api";
 import DataListItem from "../Shared/DataListItem";
+import { getRawValue } from "../Shared/utils"; // Importar la función helper
 
 interface AnalystPerspectivesProps {
   assetData: ApiAssetItem;
@@ -9,13 +10,15 @@ interface AnalystPerspectivesProps {
 export default function AnalystPerspectives({
   assetData,
 }: AnalystPerspectivesProps) {
-  // Desestructuramos directamente sin 'as any'
   const { financialData, assetProfile, price } = assetData.data;
   const currencySymbol = price?.currencySymbol || "€";
 
   if (!financialData && !assetProfile) {
     return null;
   }
+
+  // Extraer el valor raw para recommendationMean
+  const recommendationMean = getRawValue(financialData?.recommendationMean);
 
   return (
     <section className="bg-white rounded-lg shadow-xl p-6 md:p-8 mb-12">
@@ -33,12 +36,14 @@ export default function AnalystPerspectives({
               value={financialData?.recommendationKey}
               format="text"
             />
-            {financialData?.recommendationMean !== null &&
-              financialData?.recommendationMean !== undefined && (
+            {recommendationMean !== null &&
+              recommendationMean !== undefined && (
                 <li>
                   <span className="font-semibold">Puntuación Media:</span>{" "}
                   <span className="highlight-api">
-                    {financialData.recommendationMean.toFixed(2)}
+                    {typeof recommendationMean === "number"
+                      ? recommendationMean.toFixed(2)
+                      : "N/A"}
                   </span>{" "}
                   de 5
                 </li>

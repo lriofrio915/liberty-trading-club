@@ -99,9 +99,17 @@ export interface PriceData {
   fromCurrency?: string | null;
   averageDailyVolume10Day?: number;
   averageDailyVolume3Month?: number;
+  currencySymbol?: string | null;
 }
 
 export interface FinancialData {
+  totalCash: undefined;
+  totalDebt: undefined;
+  quickRatio: undefined;
+  currentRatio: undefined;
+  operatingCashflow: undefined;
+  freeCashflow: undefined;
+  totalCashPerShare: string | number | YahooFinanceRawValue | null | undefined;
   ebitda?: YahooFinanceRawValue | number;
   totalRevenue?: YahooFinanceRawValue | number;
   totalAssets?: YahooFinanceRawValue | number;
@@ -122,6 +130,9 @@ export interface FinancialData {
   debtToEquity?: YahooFinanceRawValue | number;
   returnOnAssets?: YahooFinanceRawValue | number;
   returnOnEquity?: YahooFinanceRawValue | number;
+  revenuePerShare?: YahooFinanceRawValue | number;
+  grossProfits?: YahooFinanceRawValue | number;
+  ebitdaMargins?: YahooFinanceRawValue | number;
 }
 
 export interface AssetProfileData {
@@ -137,6 +148,11 @@ export interface AssetProfileData {
   zip?: string | null;
   country?: string | null;
   companyOfficers?: any[];
+  overallRisk?: number;
+  auditRisk?: number;
+  boardRisk?: number;
+  compensationRisk?: number;
+  shareHolderRightsRisk?: number;
 }
 
 export interface KeyStatisticsData {
@@ -166,6 +182,9 @@ export interface KeyStatisticsData {
   revenuePerShare?: YahooFinanceRawValue | number;
   earningsQuarterlyGrowth?: YahooFinanceRawValue | number;
   revenueQuarterlyGrowth?: YahooFinanceRawValue | number;
+  fiftyTwoWeekChange?: YahooFinanceRawValue | number;
+  trailingEps?: YahooFinanceRawValue | number;
+  forwardEps?: YahooFinanceRawValue | number;
 }
 
 export interface DividendData {

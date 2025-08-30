@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { ApiAssetItem } from "@/types/api";
+import { getRawValue } from "../Shared/utils";
 
 // ===================================
 // INTERFACES Y FUNCIONES AUXILIARES
@@ -56,23 +57,30 @@ const formatTooltipValue = (value: number) => {
 export default function NetIncomeChart({ assetData }: NetIncomeChartProps) {
   const financialHistory =
     assetData.data.cashflowStatementHistory?.cashflowStatements;
-
   const hasFinancialHistory = financialHistory && financialHistory.length > 0;
 
   const chartData: ChartData[] = hasFinancialHistory
-    ? financialHistory
-        .map((item) => {
-          const year = item.endDate
-            ? new Date(item.endDate as string).getFullYear().toString()
-            : "N/A";
-          const netIncomeValue = item.netIncome ?? null;
+    ? financialHistory.map((item) => {
+        // Extraer el año correctamente
+        let year = "N/A";
+        if (item.endDate) {
+          if (typeof item.endDate === "object" && "raw" in item.endDate) {
+            // Es YahooFinanceDateValue
+            year = new Date(item.endDate.raw * 1000).getFullYear().toString();
+          } else if (item.endDate instanceof Date) {
+            // Es Date object
+            year = item.endDate.getFullYear().toString();
+          }
+        }
 
-          return {
-            year,
-            netIncome: netIncomeValue,
-          };
-        })
-        .reverse()
+        // Extraer el valor netIncome usando getRawValue
+        const netIncomeValue = getRawValue(item.netIncome);
+
+        return {
+          year,
+          netIncome: typeof netIncomeValue === "number" ? netIncomeValue : null,
+        };
+      })
     : [];
 
   if (!hasFinancialHistory) {

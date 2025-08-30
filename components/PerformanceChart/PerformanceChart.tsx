@@ -80,7 +80,7 @@ export default function PerformanceChart({ assetData }: PerformanceChartProps) {
     }
 
     return assetData.data.historical.filter((item) => {
-      const itemDate = parseFinanceDate(item.date);
+      const itemDate = new Date(item.date);
       return itemDate >= cutoffDate;
     });
   }, [assetData, selectedPeriod]);
