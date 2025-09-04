@@ -11,6 +11,7 @@ export interface Portfolio {
 
 // Definimos la interfaz para los datos de cada activo, como se mostrarán en la tabla
 export interface AssetData {
+  data: any;
   ticker: string;
   name: string;
   sector: string;
