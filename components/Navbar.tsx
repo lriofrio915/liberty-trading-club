@@ -149,7 +149,6 @@ export default function Navbar() {
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Datos del formulario:", formData);
     closeCoursesModal();
     window.location.href = "/cursos-gratis";
   };

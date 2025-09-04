@@ -5,6 +5,7 @@ import { ApiAssetItem } from "@/types/api";
 import DataListItem from "../Shared/DataListItem";
 import { translateText } from "@/app/actions/translateAction";
 import NetIncomeChart from "../NetIncomeChart/NetIncomeChart";
+import TotalRevenueChart from "../TotalRevenueChart/TotalRevenueChart";
 
 interface CompanyOverviewProps {
   assetData: ApiAssetItem;
@@ -138,7 +139,8 @@ export default function CompanyOverview({ assetData }: CompanyOverviewProps) {
         </div>
 
         {/* Sección de logo de Emporium */}
-        <div className="flex items-center justify-center p-6 bg-gray-50 rounded-lg">
+        <div>
+          <TotalRevenueChart assetData={assetData} />
           <NetIncomeChart assetData={assetData} />
         </div>
       </div>

@@ -21,9 +21,9 @@ import {
 
 export async function GET(
   request: Request,
-  { params }: { params: { ticker: string } }
+  { params }: { params: Promise<{ ticker: string }> }
 ) {
-  const { ticker } = params;
+  const { ticker } = await params;
 
   if (!ticker) {
     return NextResponse.json(

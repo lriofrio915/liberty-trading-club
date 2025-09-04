@@ -17,6 +17,7 @@ export interface AssetData {
   industry: string;
   price: number | null;
   dailyChange: number | null;
+  incomeStatementHistory?: RawYahooFinanceIncomeStatementItem[];
   error?: string; // Para manejar errores individuales por activo
 }
 
@@ -36,11 +37,20 @@ export type YahooFinanceModule =
   | "earningsTrend";
 
 // Tipo auxiliar para valores numéricos de Yahoo Finance (con 'raw' y 'fmt')
-export type YahooFinanceRawValue = {
+export interface YahooFinanceRawValue {
   raw: number;
-  fmt: string;
+  fmt?: string;
   longFmt?: string;
-};
+}
+
+export type RawValueType = 
+  | number 
+  | string 
+  | YahooFinanceRawValue 
+  | null 
+  | undefined;
+
+export type GetRawValueReturnType = number | string | null | undefined;
 
 // Tipo auxiliar para valores de fecha de Yahoo Finance
 export type YahooFinanceDateValue = { raw: number; fmt: string };
@@ -259,6 +269,7 @@ export interface QuoteSummaryBalanceSheetHistory {
 export interface IncomeStatementHistory {
   maxAge: number;
   incomeStatements: RawYahooFinanceIncomeStatementItem[];
+  incomeStatementHistory?: RawYahooFinanceIncomeStatementItem[];
 }
 
 // 6. Interfaces de Respuesta de la API

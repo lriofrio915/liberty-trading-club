@@ -5,45 +5,15 @@ import {
   FinancialHistoryItem,
   YahooFinanceRawValue,
   YahooFinanceDateValue,
+  RawYahooFinanceBalanceSheetItem,
+  RawYahooFinanceCashflowItem,
+  QuoteSummaryResult,
 } from "@/types/api";
 
-// Definiciones más específicas para los módulos que pueden ser retornados por quoteSummary
-interface PriceData {
-  [key: string]: unknown;
-}
-interface SummaryDetailData {
-  [key: string]: unknown;
-}
-interface AssetProfileData {
-  [key: string]: unknown;
-}
-interface DefaultKeyStatisticsData {
-  [key: string]: unknown;
-}
-interface FinancialDataModule {
-  [key: string]: unknown;
-}
-
-interface QuoteSummary {
-  cashflowStatementHistory?: {
-    cashflowStatements: any[];
-  };
-  balanceSheetHistory?: {
-    balanceSheetStatements: any[];
-  };
-  incomeStatementHistory?: {
-    incomeStatementHistory: any[];
-  };
-  price?: PriceData;
-  summaryDetail?: SummaryDetailData;
-  assetProfile?: AssetProfileData;
-  defaultKeyStatistics?: DefaultKeyStatisticsData;
-  financialData?: FinancialDataModule;
-  [key: string]: unknown;
-}
-
-// Función helper para extraer el valor numérico (ahora regresa `null` si no hay valor)
-function getRawValue(value: YahooFinanceRawValue | undefined): number | null {
+// FUNCIÓN GETRAWVALUE - MANTENER ESTA IMPLEMENTACIÓN
+function getRawValue(
+  value: YahooFinanceRawValue | number | undefined
+): number | null {
   if (typeof value === "number") {
     return value;
   }
@@ -53,9 +23,9 @@ function getRawValue(value: YahooFinanceRawValue | undefined): number | null {
   return null;
 }
 
-// Función helper para extraer el año de endDate (ahora regresa `null` si no hay año)
+// FUNCIÓN GETYEARFROMDATE - MANTENER ESTA IMPLEMENTACIÓN
 function getYearFromDate(
-  date: YahooFinanceDateValue | undefined
+  date: YahooFinanceDateValue | Date | undefined
 ): string | null {
   if (date instanceof Date) {
     return date.getFullYear().toString();
@@ -74,7 +44,7 @@ function getYearFromDate(
 
 // Nueva función para procesar el historial financiero, más robusta
 function processFinancialHistory(
-  quoteSummary: QuoteSummary
+  quoteSummary: QuoteSummaryResult
 ): FinancialHistoryItem[] {
   try {
     const financialHistory: FinancialHistoryItem[] = [];
@@ -82,9 +52,12 @@ function processFinancialHistory(
     // Verificamos si las propiedades anidadas existen para evitar errores
     // y asignar arrays vacíos si no están presentes.
     const cashflowStatements =
-      quoteSummary.cashflowStatementHistory?.cashflowStatements || [];
+      (quoteSummary.cashflowStatementHistory
+        ?.cashflowStatements as RawYahooFinanceCashflowItem[]) || [];
+
     const balanceStatements =
-      quoteSummary.balanceSheetHistory?.balanceSheetStatements || [];
+      (quoteSummary.balanceSheetHistory
+        ?.balanceSheetStatements as RawYahooFinanceBalanceSheetItem[]) || [];
 
     const yearsData: Record<string, Partial<FinancialHistoryItem>> = {};
 
@@ -98,7 +71,7 @@ function processFinancialHistory(
       balanceStatements.length
     );
 
-    cashflowStatements.forEach((statement) => {
+    cashflowStatements.forEach((statement:RawYahooFinanceCashflowItem) => {
       const year = getYearFromDate(statement.endDate);
       if (year) {
         yearsData[year] = {
@@ -111,7 +84,7 @@ function processFinancialHistory(
       }
     });
 
-    balanceStatements.forEach((balance) => {
+    balanceStatements.forEach((balance:RawYahooFinanceBalanceSheetItem) => {
       const year = getYearFromDate(balance.endDate);
       if (year) {
         yearsData[year] = {
@@ -192,7 +165,7 @@ export async function GET(request: Request) {
         });
 
         const financialHistory = processFinancialHistory(
-          quoteSummary as QuoteSummary
+          quoteSummary as QuoteSummaryResult
         );
 
         const today = new Date();
