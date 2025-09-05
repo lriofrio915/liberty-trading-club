@@ -50,7 +50,7 @@ export async function GET(
     });
 
     const historicalPriceData = await yahooFinance.historical(ticker, {
-      period1: "2018-01-01",
+      period1: "2021-01-01",
     });
 
     if (

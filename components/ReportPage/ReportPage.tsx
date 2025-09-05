@@ -100,6 +100,7 @@ export default function ReportPage({ ticker }: ReportPageProps) {
           </p>
         </header>
 
+        <ValuationDashboard ticker={ticker} apiData={assetData.data} />
         <CompanyOverview assetData={assetData} />
         <MarketAnalysis assetData={assetData} />
         <PerformanceChart assetData={assetData} />
@@ -108,7 +109,6 @@ export default function ReportPage({ ticker }: ReportPageProps) {
         <Profitability assetData={assetData} />
         <AnalystPerspectives assetData={assetData} />
         <Conclusion assetData={assetData} />
-        <ValuationDashboard ticker={ticker} apiData={assetData.data} />
         {/* Aquí se pasa el objeto único assetData a StocksDisplay */}
 
         <footer className="text-center mt-12 pt-8 border-t border-gray-200">
