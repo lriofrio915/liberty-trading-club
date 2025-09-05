@@ -1,4 +1,3 @@
-// app/api/stocks/route.ts
 import { NextResponse } from "next/server";
 import yahooFinance from "yahoo-finance2";
 import {
@@ -8,7 +7,19 @@ import {
   RawYahooFinanceBalanceSheetItem,
   RawYahooFinanceCashflowItem,
   QuoteSummaryResult,
+  HistoricalData,
 } from "@/types/api";
+
+// He definido un tipo para los módulos para asegurar la compatibilidad con yahoo-finance2
+type QuoteSummaryModule =
+  | "price"
+  | "summaryDetail"
+  | "assetProfile"
+  | "defaultKeyStatistics"
+  | "financialData"
+  | "cashflowStatementHistory"
+  | "balanceSheetHistory"
+  | "incomeStatementHistory";
 
 // FUNCIÓN GETRAWVALUE - MANTENER ESTA IMPLEMENTACIÓN
 function getRawValue(
@@ -18,7 +29,7 @@ function getRawValue(
     return value;
   }
   if (value && typeof value === "object" && "raw" in value) {
-    return value.raw || null;
+    return value.raw ?? null;
   }
   return null;
 }
@@ -42,15 +53,13 @@ function getYearFromDate(
   return null;
 }
 
-// Nueva función para procesar el historial financiero, más robusta
+// FUNCIÓN PROCESSFINANCIALHISTORY
 function processFinancialHistory(
   quoteSummary: QuoteSummaryResult
 ): FinancialHistoryItem[] {
   try {
     const financialHistory: FinancialHistoryItem[] = [];
 
-    // Verificamos si las propiedades anidadas existen para evitar errores
-    // y asignar arrays vacíos si no están presentes.
     const cashflowStatements =
       (quoteSummary.cashflowStatementHistory
         ?.cashflowStatements as RawYahooFinanceCashflowItem[]) || [];
@@ -61,17 +70,7 @@ function processFinancialHistory(
 
     const yearsData: Record<string, Partial<FinancialHistoryItem>> = {};
 
-    console.log("LOG: Procesando historial financiero...");
-    console.log(
-      "LOG: Number of cashflow statements:",
-      cashflowStatements.length
-    );
-    console.log(
-      "LOG: Number of balance sheet statements:",
-      balanceStatements.length
-    );
-
-    cashflowStatements.forEach((statement:RawYahooFinanceCashflowItem) => {
+    cashflowStatements.forEach((statement: RawYahooFinanceCashflowItem) => {
       const year = getYearFromDate(statement.endDate);
       if (year) {
         yearsData[year] = {
@@ -84,7 +83,7 @@ function processFinancialHistory(
       }
     });
 
-    balanceStatements.forEach((balance:RawYahooFinanceBalanceSheetItem) => {
+    balanceStatements.forEach((balance: RawYahooFinanceBalanceSheetItem) => {
       const year = getYearFromDate(balance.endDate);
       if (year) {
         yearsData[year] = {
@@ -97,8 +96,6 @@ function processFinancialHistory(
         };
       }
     });
-
-    console.log("LOG: yearsData after processing:", yearsData);
 
     for (const year in yearsData) {
       const data = yearsData[year];
@@ -118,11 +115,6 @@ function processFinancialHistory(
       });
     }
 
-    console.log(
-      "LOG: Final financialHistory before sorting:",
-      financialHistory
-    );
-
     return financialHistory.sort(
       (a, b) => parseInt(a.year!) - parseInt(b.year!)
     );
@@ -135,48 +127,83 @@ function processFinancialHistory(
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const tickers = searchParams.getAll("tickers");
+    // Obtiene el string completo de tickers
+    const tickersString = searchParams.get("tickers");
+    const fullData = searchParams.get("fullData") === "true";
 
-    if (tickers.length === 0) {
+    // Si no hay tickers, retorna un error
+    if (!tickersString) {
       return NextResponse.json(
         {
           success: false,
           message:
-            "No se proporcionaron tickers para consultar. Por favor, especifica al menos un ticker en los parámetros de consulta (ej: ?tickers=AAPL&tickers=MSFT).",
+            "No se proporcionaron tickers para consultar. Por favor, especifica al menos un ticker en los parámetros de consulta.",
         },
         { status: 400 }
       );
     }
 
-    const promises = tickers.map(async (ticker) => {
+    // Divide el string en un array de tickers individuales
+    const tickersArray = tickersString
+      .split(",")
+      .filter((t) => t.trim() !== "");
+
+    if (tickersArray.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "No se proporcionaron tickers válidos para consultar.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Se construye un array de promesas, una para cada llamada individual
+    const promises = tickersArray.map(async (ticker) => {
       console.log(`LOG: Attempting to fetch data for ticker: ${ticker}`);
+
+      const baseModules: QuoteSummaryModule[] = ["price", "assetProfile"];
+      const fullModules: QuoteSummaryModule[] = [
+        "price",
+        "assetProfile",
+        "financialData",
+        "summaryDetail",
+        "defaultKeyStatistics",
+        "cashflowStatementHistory",
+        "balanceSheetHistory",
+        "incomeStatementHistory",
+      ];
+
+      const modulesToFetch = fullData ? fullModules : baseModules;
+
+      let financialHistory: FinancialHistoryItem[] = [];
+      let historicalData: HistoricalData[] = [];
+
       try {
+        // Se llama a la API de Yahoo Finance para cada ticker individualmente
         const quoteSummary = await yahooFinance.quoteSummary(ticker, {
-          modules: [
-            "price",
-            "summaryDetail",
-            "assetProfile",
-            "defaultKeyStatistics",
-            "financialData",
-            "cashflowStatementHistory",
-            "balanceSheetHistory",
-            "incomeStatementHistory",
-          ],
+          modules: modulesToFetch,
         });
 
-        const financialHistory = processFinancialHistory(
-          quoteSummary as QuoteSummaryResult
-        );
+        if (fullData) {
+          financialHistory = processFinancialHistory(
+            quoteSummary as QuoteSummaryResult
+          );
+          const today = new Date();
+          const fiveYearsAgo = new Date();
+          fiveYearsAgo.setFullYear(today.getFullYear() - 5);
 
-        const today = new Date();
-        const fiveYearsAgo = new Date();
-        fiveYearsAgo.setFullYear(today.getFullYear() - 5);
+          const rawHistoricalData = await yahooFinance.historical(ticker, {
+            period1: fiveYearsAgo,
+            period2: today,
+            interval: "1d",
+          });
 
-        const historicalData = await yahooFinance.historical(ticker, {
-          period1: fiveYearsAgo,
-          period2: today,
-          interval: "1d",
-        });
+          historicalData = rawHistoricalData.map((item) => ({
+            ...item,
+            date: item.date.toISOString().split("T")[0],
+          }));
+        }
 
         console.log(
           `LOG: Successful fetch for ${ticker}. Returning formatted data.`
@@ -195,13 +222,7 @@ export async function GET(request: Request) {
 
         try {
           const quoteSummary = await yahooFinance.quoteSummary(ticker, {
-            modules: [
-              "price",
-              "summaryDetail",
-              "assetProfile",
-              "defaultKeyStatistics",
-              "financialData",
-            ],
+            modules: ["price", "assetProfile"],
           });
 
           return {
@@ -226,11 +247,6 @@ export async function GET(request: Request) {
     });
 
     const results = await Promise.all(promises);
-
-    console.log(
-      "LOG: API route is returning this JSON:",
-      JSON.stringify(results, null, 2)
-    );
 
     return NextResponse.json({
       success: true,
