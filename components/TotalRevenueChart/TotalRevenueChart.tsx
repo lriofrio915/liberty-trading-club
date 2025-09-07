@@ -40,8 +40,6 @@ export default function TotalRevenueChart({
 }: TotalRevenueChartProps) {
   // Obtener dato TTM (Trailing Twelve Months) para Total Revenue
   const ttmTotalRevenue = assetData.data.financialData?.totalRevenue;
-  console.log("TTM Total Revenue:", ttmTotalRevenue);
-
   const financialHistory =
     assetData.data.incomeStatementHistory?.incomeStatementHistory;
   const hasFinancialHistory = financialHistory && financialHistory.length > 0;

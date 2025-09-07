@@ -13,6 +13,7 @@ import Conclusion from "../Conclusion/Conclusion";
 import LoadingSpinner from "../Shared/LoadingSpinner";
 import ErrorDisplay from "../Shared/ErrorDisplay";
 import ValuationDashboard from "../ValuationDashboard/ValuationDashboard";
+import FutureFinancialTable from "../FutureFinancialTable/FutureFinancialTable";
 
 interface ReportPageProps {
   ticker: string;
@@ -109,6 +110,7 @@ export default function ReportPage({ ticker }: ReportPageProps) {
         <Profitability assetData={assetData} />
         <AnalystPerspectives assetData={assetData} />
         <Conclusion assetData={assetData} />
+        <FutureFinancialTable />
         {/* Aquí se pasa el objeto único assetData a StocksDisplay */}
 
         <footer className="text-center mt-12 pt-8 border-t border-gray-200">

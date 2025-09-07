@@ -73,7 +73,6 @@ export default function NetIncomeChart({ assetData }: NetIncomeChartProps) {
         year: currentYear, // 2025
         netIncome: ttmNetIncomeValue,
       });
-      console.log(`Added TTM data for ${currentYear}:`, ttmNetIncomeValue);
     }
   }
 
@@ -110,9 +109,6 @@ export default function NetIncomeChart({ assetData }: NetIncomeChartProps) {
 
   // Ordenar por año (ascendente)
   chartData.sort((a, b) => parseInt(a.year) - parseInt(b.year));
-
-  console.log("Final chart data:", chartData);
-
   const hasData = chartData.length > 0;
 
   if (!hasData) {
