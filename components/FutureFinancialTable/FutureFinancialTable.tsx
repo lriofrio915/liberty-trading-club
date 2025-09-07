@@ -1,4 +1,4 @@
-// Componente de frontend para mostrar datos financieros
+// Componente de frontend para mostrar datos financieros de cualquier ticker
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -19,13 +19,14 @@ interface FinancialData {
     dilutedAverageShares: number[];
     taxRateForCalcs: number[];
     taxEffectOfUnusualItems: number[];
+    pretaxIncome: number[]; // Agregado para el cálculo de la tasa impositiva
   };
 }
 
 // Define la interfaz para los datos de la tabla
 interface TableRow {
   name: string;
-  values: number[];
+  values: (number | string)[];
 }
 
 interface FutureFinancialTableProps {
@@ -38,6 +39,80 @@ const formatNumber = (num: number) => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(num);
+};
+
+// Función para calcular el crecimiento de ventas en porcentaje
+const calculateSalesGrowth = (revenues: number[]): (number | string)[] => {
+  const salesGrowth: (number | string)[] = [];
+  salesGrowth.push("N/A"); // El primer valor (TTM) no tiene crecimiento anual
+  for (let i = 1; i < revenues.length; i++) {
+    const currentRevenue = revenues[i];
+    const previousRevenue = revenues[i + 1];
+    if (previousRevenue === 0 || previousRevenue === undefined) {
+      salesGrowth.push("N/A");
+    } else {
+      const growth =
+        ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+      salesGrowth.push(parseFloat(growth.toFixed(2)));
+    }
+  }
+  return salesGrowth;
+};
+
+// Función para calcular el margen EBIT
+const calculateEbitMargin = (
+  ebits: number[],
+  revenues: number[]
+): (number | string)[] => {
+  const ebitMargins: (number | string)[] = [];
+  for (let i = 0; i < ebits.length; i++) {
+    const ebit = ebits[i];
+    const revenue = revenues[i];
+    if (revenue === 0) {
+      ebitMargins.push("N/A");
+    } else {
+      const margin = (ebit / revenue) * 100;
+      ebitMargins.push(parseFloat(margin.toFixed(2)));
+    }
+  }
+  return ebitMargins;
+};
+
+// Función para calcular la tasa impositiva real
+const calculateTaxRate = (
+  taxProvisions: number[],
+  pretaxIncomes: number[]
+): (number | string)[] => {
+  const taxRates: (number | string)[] = [];
+  for (let i = 0; i < taxProvisions.length; i++) {
+    const taxProvision = taxProvisions[i];
+    const pretaxIncome = pretaxIncomes[i];
+    if (pretaxIncome === 0) {
+      taxRates.push("N/A");
+    } else {
+      const rate = (taxProvision / pretaxIncome) * 100;
+      taxRates.push(parseFloat(rate.toFixed(2)));
+    }
+  }
+  return taxRates;
+};
+
+// Función para calcular el aumento de acciones
+const calculateSharesIncrease = (shares: number[]): (number | string)[] => {
+  const sharesIncrease: (number | string)[] = [];
+  sharesIncrease.push("N/A"); // El primer valor (TTM) no tiene un aumento anual
+  for (let i = 1; i < shares.length; i++) {
+    const currentShares = shares[i];
+    const previousShares = shares[i + 1];
+    if (previousShares === 0 || previousShares === undefined) {
+      sharesIncrease.push("N/A");
+    } else {
+      const increase =
+        ((currentShares - previousShares) / previousShares) * 100;
+      sharesIncrease.push(parseFloat(increase.toFixed(2)));
+    }
+  }
+  return sharesIncrease;
 };
 
 export default function FutureFinancialTable({
@@ -80,9 +155,20 @@ export default function FutureFinancialTable({
   const tableRows: TableRow[] = data
     ? [
         { name: "Total Revenue", values: data.metrics.totalRevenue },
+        {
+          name: "Sales Growth (%)",
+          values: calculateSalesGrowth(data.metrics.totalRevenue),
+        },
         { name: "Cost of Revenue", values: data.metrics.costOfRevenue },
         { name: "Gross Profit", values: data.metrics.grossProfit },
         { name: "EBIT", values: data.metrics.ebit },
+        {
+          name: "EBIT Margin (%)",
+          values: calculateEbitMargin(
+            data.metrics.ebit,
+            data.metrics.totalRevenue
+          ),
+        },
         { name: "EBITDA", values: data.metrics.ebitda },
         { name: "Net Income", values: data.metrics.netIncome },
         { name: "Basic EPS", values: data.metrics.basicEps },
@@ -92,10 +178,21 @@ export default function FutureFinancialTable({
           values: data.metrics.basicAverageShares,
         },
         {
+          name: "Shares Increase (%)",
+          values: calculateSharesIncrease(data.metrics.basicAverageShares),
+        },
+        {
           name: "Diluted Average Shares",
           values: data.metrics.dilutedAverageShares,
         },
         { name: "Tax Rate for Calcs", values: data.metrics.taxRateForCalcs },
+        {
+          name: "Real Tax Rate (%)",
+          values: calculateTaxRate(
+            data.metrics.taxRateForCalcs,
+            data.metrics.netIncome
+          ),
+        },
         {
           name: "Tax Effect of Unusual Items",
           values: data.metrics.taxEffectOfUnusualItems,
@@ -161,7 +258,7 @@ export default function FutureFinancialTable({
                       key={colIndex}
                       className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-400"
                     >
-                      {formatNumber(value)}
+                      {typeof value === "number" ? formatNumber(value) : value}
                     </td>
                   ))}
                 </tr>

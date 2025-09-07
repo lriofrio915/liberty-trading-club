@@ -22,7 +22,7 @@ interface Props {
   apiData: QuoteSummaryResult;
 }
 
-const ValuationDashboard: React.FC<Props> = ({ ticker, apiData }) => {
+const  ValuationDashboard: React.FC<Props> = ({ ticker, apiData }) => {
   const currentPrice = getRawValue(apiData.price?.regularMarketPrice);
   const trailingPE = getRawValue(apiData.defaultKeyStatistics?.trailingPE);
   const forwardPE = getRawValue(apiData.defaultKeyStatistics?.forwardPE);
@@ -112,7 +112,7 @@ const ValuationDashboard: React.FC<Props> = ({ ticker, apiData }) => {
         </h2>
         <div className="grid md:grid-cols-2 gap-8 mb-8">
           {/* El color del componente hijo se ajustará dentro de cada componente */}
-          <ProjectionsTable data={processedData.projections} />
+          <ProjectionsTable ticker={ticker} />
           <ValuationMultiplesTable
             multiples={processedData.multiples}
             currentPrice={
