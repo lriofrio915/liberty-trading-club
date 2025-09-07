@@ -21,11 +21,22 @@ const cleanAndParseValue = (text: string) => {
 export async function GET(request: Request) {
   let browser;
   try {
+    // Extrae el ticker del parámetro de consulta
+    const { searchParams } = new URL(request.url);
+    const ticker = searchParams.get("ticker");
+
+    if (!ticker) {
+      return NextResponse.json(
+        { error: 'Falta el parámetro "ticker" en la solicitud.' },
+        { status: 400 }
+      );
+    }
+
     // Inicia un navegador Chromium en modo headless (sin interfaz gráfica)
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
 
-    const url = `https://finance.yahoo.com/quote/ROAD/financials/`;
+    const url = `https://finance.yahoo.com/quote/${ticker}/financials/`;
     await page.goto(url, { waitUntil: "domcontentloaded" });
 
     // Espera a que el título de la empresa sea visible, un selector muy estable

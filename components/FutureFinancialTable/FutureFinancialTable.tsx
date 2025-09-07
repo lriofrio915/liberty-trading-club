@@ -1,6 +1,7 @@
+// Componente de frontend para mostrar datos financieros
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 // Define la interfaz para la estructura de los datos financieros
 interface FinancialData {
@@ -27,35 +28,55 @@ interface TableRow {
   values: number[];
 }
 
-export default function FutureFinancialTable() {
+interface FutureFinancialTableProps {
+  ticker: string;
+}
+
+const formatNumber = (num: number) => {
+  if (num === 0) return "0";
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(num);
+};
+
+export default function FutureFinancialTable({
+  ticker,
+}: FutureFinancialTableProps) {
   const [data, setData] = useState<FinancialData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Función para obtener los datos de la nueva API Route
-  const fetchData = async () => {
+  const fetchData = async (currentTicker: string) => {
     setLoading(true);
     setError(null);
     try {
-      // Llamada directa a la API, que ahora no requiere un ticker
-      const response = await fetch(`/api/proyecciones-futuras`);
+      const response = await fetch(
+        `/api/proyecciones-futuras?ticker=${currentTicker}`
+      );
       if (!response.ok) {
         throw new Error("No se pudo obtener la respuesta de la API");
       }
       const result = await response.json();
+      if (result.error) {
+        throw new Error(result.error);
+      }
       setData(result);
     } catch (err: any) {
       setError(err.message);
+      console.error(err);
+      setData(null);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
-  }, []); // Se ejecuta solo una vez al cargar el componente
+    if (ticker) {
+      fetchData(ticker);
+    }
+  }, [ticker]); // Se ejecuta cada vez que el ticker cambia
 
-  // Prepara los datos para renderizar la tabla
   const tableRows: TableRow[] = data
     ? [
         { name: "Total Revenue", values: data.metrics.totalRevenue },
@@ -86,7 +107,7 @@ export default function FutureFinancialTable() {
     <div className="container mx-auto p-4 md:p-8 bg-gray-950 text-white min-h-screen font-sans">
       <div className="flex flex-col items-center">
         <h1 className="text-4xl md:text-5xl font-extrabold mb-2 text-center text-teal-400">
-          Datos Financieros de ROAD
+          Datos Financieros de {ticker}
         </h1>
         <p className="text-lg md:text-xl text-gray-400 text-center mb-6">
           Obtén datos financieros de Yahoo Finance
@@ -140,7 +161,7 @@ export default function FutureFinancialTable() {
                       key={colIndex}
                       className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-400"
                     >
-                      {value.toLocaleString()}
+                      {formatNumber(value)}
                     </td>
                   ))}
                 </tr>
