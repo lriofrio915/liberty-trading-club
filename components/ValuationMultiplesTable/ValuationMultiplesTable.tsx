@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from "react";
 import Tooltip from "../Shared/Tooltips";
 
@@ -14,12 +15,13 @@ interface ValuationData {
 
 interface MultiplesData {
   headers: string[];
-  metrics: { [key: string]: number };
+  metrics: { [key: string]: number[] }; // Corregimos el tipo a number[]
 }
 
 interface IncomeStatementData {
   metrics: {
     ebit: number[];
+    ebitda: number[];
   };
 }
 
@@ -35,6 +37,7 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
   }>({});
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Mantenemos los objetivos "hardcodeados" inicialmente
   const hardcodedTargets = {
     PER: 0,
     EV_EBITDA: 0,
@@ -45,11 +48,11 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
   const metricDescriptions: { [key: string]: string } = {
     PER: "Mide cuánto están los inversores dispuestos a pagar por cada dólar de ganancias de una empresa. Se calcula dividiendo el precio de la acción entre el EPS.",
     EV_EBITDA:
-      "Compara el valor total de la empresa con las ganancias antes de intereses, impuestos, depreciación y amortización. Es una medida de la rentabilidad operativa.",
+      "Compara el valor total de la empresa (Enterprise Value) con las ganancias antes de intereses, impuestos, depreciación y amortización. Es una medida de la rentabilidad operativa.",
     EV_EBIT:
       "Similar al EV/EBITDA, pero excluye la depreciación y amortización. Útil para comparar empresas con diferentes estructuras de capital.",
     EV_FCF:
-      "Compara el valor total de la empresa con el flujo de caja libre. Es útil porque se enfoca en la caja real que la empresa produce.",
+      "Compara el valor total de la empresa (Enterprise Value) con el flujo de caja libre. Es útil porque se enfoca en la caja real que la empresa produce.",
   };
 
   useEffect(() => {
@@ -72,36 +75,40 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
           ),
         ]);
 
-        const keyStatisticsData: MultiplesData = keyStatisticsResponse;
+        // Ajustamos el tipo de MultiplesData ya que los valores de metrics son arrays
+        const keyStatisticsData: {
+          headers: string[];
+          metrics: { [key: string]: number[] };
+        } = keyStatisticsResponse;
         const incomeStatementData: IncomeStatementData =
           incomeStatementResponse;
         const freeCashFlowData: FreeCashFlowData = freeCashFlowResponse;
 
-        // Extraer los valores del TTM de Key Statistics de manera más robusta
-        const trailingPE = keyStatisticsData.metrics["Trailing P/E"] || 0;
-        const forwardPE = keyStatisticsData.metrics["Forward P/E"] || 0;
+        // Extraemos los valores del LTM (primer elemento del array) de forma segura
+        const trailingPE =
+          (keyStatisticsData.metrics["trailingPE"] || [])[0] || 0;
+        const forwardPE =
+          (keyStatisticsData.metrics["forwardPE"] || [])[0] || 0;
         const enterpriseValue =
-          keyStatisticsData.metrics["Enterprise Value"] || 0;
-        const enterpriseValueEBITDA =
-          keyStatisticsData.metrics["Enterprise Value/EBITDA"] || 0;
+          (keyStatisticsData.metrics["enterpriseValue"] || [])[0] || 0;
 
-        // Extraer los valores de las otras APIs de forma segura
-        const freeCashFlow =
-          (freeCashFlowData.metrics.freeCashFlow || []).at(0) || 0;
-        const ebit = (incomeStatementData.metrics.ebit || []).at(0) || 0;
+        // Extraemos los valores LTM de las otras APIs de forma segura
+        const ltmEBITDA = (incomeStatementData.metrics.ebitda || [])[0] || 0;
+        const ltmEBIT = (incomeStatementData.metrics.ebit || [])[0] || 0;
+        const ltmFCF = (freeCashFlowData.metrics.freeCashFlow || [])[0] || 0;
 
+        // Calculamos las métricas para los últimos 12 meses (LTM)
         const ltmMetrics = {
           PER: trailingPE,
-          EV_EBITDA: enterpriseValueEBITDA,
-          EV_EBIT: ebit !== 0 ? enterpriseValue / ebit : 0,
-          EV_FCF: freeCashFlow !== 0 ? enterpriseValue / freeCashFlow : 0,
+          EV_EBITDA: ltmEBITDA !== 0 ? enterpriseValue / ltmEBITDA : 0,
+          EV_EBIT: ltmEBIT !== 0 ? enterpriseValue / ltmEBIT : 0,
+          EV_FCF: ltmFCF !== 0 ? enterpriseValue / ltmFCF : 0,
         };
 
+        // Para los próximos 12 meses (NTM), solo el P/E está disponible directamente
         const ntmMetrics = {
           PER: forwardPE,
-          // NTM Enterprise Value/EBITDA no está disponible directamente, usaremos el LTM
-          EV_EBITDA: keyStatisticsData.metrics["Enterprise Value/EBITDA"] || 0,
-          // No se puede calcular NTM EV/EBIT y EV/FCF sin datos NTM para EBIT y FCF
+          EV_EBITDA: 0,
           EV_EBIT: 0,
           EV_FCF: 0,
         };
@@ -135,13 +142,7 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
       }
     };
     fetchValuationData();
-  }, [
-    ticker,
-    hardcodedTargets.PER,
-    hardcodedTargets.EV_EBITDA,
-    hardcodedTargets.EV_EBIT,
-    hardcodedTargets.EV_FCF,
-  ]);
+  }, [ticker]);
 
   const handleTargetChange = (key: string, value: string) => {
     setValuationMetrics((prevMetrics) => ({
@@ -201,8 +202,8 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
                   {key.replace("_", " / ")}
                 </Tooltip>
               </td>
-              <td className="py-2">{value.ltm?.toFixed(2)}</td>
-              <td className="py-2">{value.ntm?.toFixed(2)}</td>
+              <td className="py-2">{value.ltm?.toFixed(2) || "-"}</td>
+              <td className="py-2">{value.ntm?.toFixed(2) || "-"}</td>
               <td className="py-2 text-red-600 font-bold">
                 <input
                   type="number"
