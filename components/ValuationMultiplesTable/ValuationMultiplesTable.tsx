@@ -56,24 +56,38 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
     const fetchValuationData = async () => {
       setLoading(true);
       try {
-        const [keyStatisticsResponse, incomeStatementResponse, freeCashFlowResponse] = await Promise.all([
-          fetch(`/api/key-statistics?ticker=${ticker}`).then((res) => res.json()),
-          fetch(`/api/income-statement?ticker=${ticker}`).then((res) => res.json()),
-          fetch(`/api/free-cash-flow?ticker=${ticker}`).then((res) => res.json()),
+        const [
+          keyStatisticsResponse,
+          incomeStatementResponse,
+          freeCashFlowResponse,
+        ] = await Promise.all([
+          fetch(`/api/key-statistics?ticker=${ticker}`).then((res) =>
+            res.json()
+          ),
+          fetch(`/api/income-statement?ticker=${ticker}`).then((res) =>
+            res.json()
+          ),
+          fetch(`/api/free-cash-flow?ticker=${ticker}`).then((res) =>
+            res.json()
+          ),
         ]);
 
         const keyStatisticsData: MultiplesData = keyStatisticsResponse;
-        const incomeStatementData: IncomeStatementData = incomeStatementResponse;
+        const incomeStatementData: IncomeStatementData =
+          incomeStatementResponse;
         const freeCashFlowData: FreeCashFlowData = freeCashFlowResponse;
 
         // Extraer los valores del TTM de Key Statistics de manera más robusta
         const trailingPE = keyStatisticsData.metrics["Trailing P/E"] || 0;
         const forwardPE = keyStatisticsData.metrics["Forward P/E"] || 0;
-        const enterpriseValue = keyStatisticsData.metrics["Enterprise Value"] || 0;
-        const enterpriseValueEBITDA = keyStatisticsData.metrics["Enterprise Value/EBITDA"] || 0;
+        const enterpriseValue =
+          keyStatisticsData.metrics["Enterprise Value"] || 0;
+        const enterpriseValueEBITDA =
+          keyStatisticsData.metrics["Enterprise Value/EBITDA"] || 0;
 
         // Extraer los valores de las otras APIs de forma segura
-        const freeCashFlow = (freeCashFlowData.metrics.freeCashFlow || []).at(0) || 0;
+        const freeCashFlow =
+          (freeCashFlowData.metrics.freeCashFlow || []).at(0) || 0;
         const ebit = (incomeStatementData.metrics.ebit || []).at(0) || 0;
 
         const ltmMetrics = {
@@ -121,7 +135,13 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
       }
     };
     fetchValuationData();
-  }, [ticker]);
+  }, [
+    ticker,
+    hardcodedTargets.PER,
+    hardcodedTargets.EV_EBITDA,
+    hardcodedTargets.EV_EBIT,
+    hardcodedTargets.EV_FCF,
+  ]);
 
   const handleTargetChange = (key: string, value: string) => {
     setValuationMetrics((prevMetrics) => ({

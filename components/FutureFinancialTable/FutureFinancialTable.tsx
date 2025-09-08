@@ -110,9 +110,14 @@ export default function FutureFinancialTable({
       };
 
       setData(combinedData);
-    } catch (err: any) {
-      setError(err.message);
-      console.error(err);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+        console.error(err);
+      } else {
+        setError("Ocurrió un error inesperado.");
+        console.error("Ocurrió un error inesperado:", err);
+      }
       setData(null);
     } finally {
       setLoading(false);

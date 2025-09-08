@@ -33,9 +33,6 @@ const cleanAndParseValue = (text: string) => {
   return Number.isFinite(value) ? value : 0;
 };
 
-/** Normaliza espacios y mayúsculas para hacer comparaciones tolerantes */
-const norm = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
-
 /**
  * Lista de filas a extraer (tal como las muestra Yahoo en Balance Sheet).
  * Usamos varias variantes de búsqueda para mayor tolerancia a cambios menores.
@@ -98,43 +95,11 @@ export async function GET(request: Request) {
       await page.click('div.row:has-text("Total Assets") button');
       // Esperar un momento para que el contenido se cargue dinámicamente
       await page.waitForTimeout(1000);
-    } catch (clickError) {
-      console.warn("No se pudo hacer clic en el botón de expansión. Ignorando.");
-    }
-
-    const scraped = await page.evaluate(() => {
-      // Helpers dentro del navegador
-      const getHeaders = (): string[] => {
-        const headerRow = document.querySelector("div.tableHeader .row");
-        const cols = Array.from(headerRow?.querySelectorAll("div.column") || [])
-          .map((c) => c.textContent?.trim() || "")
-          .filter((t) => t && t !== "Breakdown");
-        return cols;
-      };
-
-      // Buscamos filas en el body
-      const allRows = Array.from(
-        document.querySelectorAll("div.tableBody .row")
+    } catch {
+      console.warn(
+        "No se pudo hacer clic en el botón de expansión. Ignorando."
       );
-
-      const pickRowValuesByTitles = (titles: string[]): string[] => {
-        const target = allRows.find((row) => {
-          const title =
-            row.querySelector(".rowTitle")?.textContent?.trim() || "";
-          const titleNorm = title.replace(/\s+/g, " ").trim().toLowerCase();
-          return titles.some((t) => titleNorm.includes(t));
-        });
-        if (!target) return [];
-        const cols = target.querySelectorAll("div.column:not(.sticky)");
-        return Array.from(cols).map((c) => c.textContent?.trim() || "");
-      };
-
-      return {
-        headers: getHeaders(),
-        // devolvemos valores crudos (strings); parseamos fuera
-        rowsRaw: (window as any)._ROWS_WILL_BE_FILLED_OUTSIDE ?? undefined, // solo para tipado
-      };
-    });
+    }
 
     // Re-evaluamos para cada fila deseada (evita mover mucha lógica al navegador)
     const rowValues: Record<string, string[]> = {};
@@ -157,7 +122,7 @@ export async function GET(request: Request) {
         if (!target) return [];
         const cols = target.querySelectorAll("div.column:not(.sticky)");
         return Array.from(cols).map((c) => c.textContent?.trim() || "");
-      }, Object.values(labelList));
+      }, labelList);
 
       rowValues[key] = values;
     }
@@ -213,9 +178,9 @@ export async function GET(request: Request) {
           cleanAndParseValue
         ),
         // Se añade el nuevo campo
-        currentAssets: (
-          rowValues["currentAssets"] || []
-        ).map(cleanAndParseValue),
+        currentAssets: (rowValues["currentAssets"] || []).map(
+          cleanAndParseValue
+        ),
       },
     };
 

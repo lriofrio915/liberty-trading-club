@@ -115,8 +115,12 @@ export async function GET(request: Request) {
     };
 
     return NextResponse.json(formattedData);
-  } catch (error: any) {
-    console.error("Error durante el web scraping:", error);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error("Error durante el web scraping:", error.message);
+    } else {
+      console.error("Ocurrió un error desconocido:", error);
+    }
     return NextResponse.json(
       { error: "Error al obtener los datos financieros." },
       { status: 500 }
