@@ -80,6 +80,8 @@ export async function GET(request: Request) {
         dilutedAverageShares: getRowValues("Diluted Average Shares"),
         taxRateForCalcs: getRowValues("Tax Rate for Calcs"),
         taxEffectOfUnusualItems: getRowValues("Tax Effect of Unusual Items"),
+        // Se añade la nueva métrica
+        pretaxIncome: getRowValues("Pretax Income"),
       };
     });
 
@@ -107,6 +109,8 @@ export async function GET(request: Request) {
         taxRateForCalcs: financialData.taxRateForCalcs.map(cleanAndParseValue),
         taxEffectOfUnusualItems:
           financialData.taxEffectOfUnusualItems.map(cleanAndParseValue),
+        // Se añade el nuevo campo
+        pretaxIncome: financialData.pretaxIncome.map(cleanAndParseValue),
       },
     };
 

@@ -143,9 +143,9 @@ const ProjectionsTable: React.FC<Props> = ({ ticker }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [estimates, setEstimates] = useState({
-    salesGrowth: "5.0",
-    ebitMargin: "15.0",
-    taxRate: "20.0",
+    salesGrowth: "0",
+    ebitMargin: "0",
+    taxRate: "0",
     sharesIncrease: "0",
   });
 
@@ -165,7 +165,7 @@ const ProjectionsTable: React.FC<Props> = ({ ticker }) => {
       setError(null);
       try {
         const response = await fetch(
-          `/api/proyecciones-futuras?ticker=${ticker}`
+          `/api/income-statement?ticker=${ticker}`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch API response");

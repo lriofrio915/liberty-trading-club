@@ -114,7 +114,7 @@ const  ValuationDashboard: React.FC<Props> = ({ ticker, apiData }) => {
           {/* El color del componente hijo se ajustará dentro de cada componente */}
           <ProjectionsTable ticker={ticker} />
           <ValuationMultiplesTable
-            multiples={processedData.multiples}
+            ticker={ticker}
             currentPrice={
               typeof processedData.currentPrice === "number"
                 ? processedData.currentPrice

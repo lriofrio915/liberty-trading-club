@@ -1,25 +1,25 @@
-// Componente de frontend para mostrar datos financieros de cualquier ticker
 "use client";
 
 import React, { useState, useEffect } from "react";
 
-// Define la interfaz para la estructura de los datos financieros
+// Define la interfaz para la estructura de los datos financieros combinados
 interface FinancialData {
   headers: string[];
   metrics: {
+    // Métricas del Income Statement
     totalRevenue: number[];
-    costOfRevenue: number[];
-    grossProfit: number[];
     ebit: number[];
     ebitda: number[];
     netIncome: number[];
-    basicEps: number[];
-    dilutedEps: number[];
     basicAverageShares: number[];
-    dilutedAverageShares: number[];
+    pretaxIncome: number[];
     taxRateForCalcs: number[];
-    taxEffectOfUnusualItems: number[];
-    pretaxIncome: number[]; // Agregado para el cálculo de la tasa impositiva
+    // Métricas del Balance Sheet
+    ordinarySharesNumber: number[];
+    totalDebt: number[];
+    cashAndCashEquivalents: number[];
+    // Métricas del Cash Flow
+    freeCashFlow: number[];
   };
 }
 
@@ -41,43 +41,6 @@ const formatNumber = (num: number) => {
   }).format(num);
 };
 
-// Función para calcular el crecimiento de ventas en porcentaje
-const calculateSalesGrowth = (revenues: number[]): (number | string)[] => {
-  const salesGrowth: (number | string)[] = [];
-  salesGrowth.push("N/A"); // El primer valor (TTM) no tiene crecimiento anual
-  for (let i = 1; i < revenues.length; i++) {
-    const currentRevenue = revenues[i];
-    const previousRevenue = revenues[i + 1];
-    if (previousRevenue === 0 || previousRevenue === undefined) {
-      salesGrowth.push("N/A");
-    } else {
-      const growth =
-        ((currentRevenue - previousRevenue) / previousRevenue) * 100;
-      salesGrowth.push(parseFloat(growth.toFixed(2)));
-    }
-  }
-  return salesGrowth;
-};
-
-// Función para calcular el margen EBIT
-const calculateEbitMargin = (
-  ebits: number[],
-  revenues: number[]
-): (number | string)[] => {
-  const ebitMargins: (number | string)[] = [];
-  for (let i = 0; i < ebits.length; i++) {
-    const ebit = ebits[i];
-    const revenue = revenues[i];
-    if (revenue === 0) {
-      ebitMargins.push("N/A");
-    } else {
-      const margin = (ebit / revenue) * 100;
-      ebitMargins.push(parseFloat(margin.toFixed(2)));
-    }
-  }
-  return ebitMargins;
-};
-
 // Función para calcular la tasa impositiva real
 const calculateTaxRate = (
   taxProvisions: number[],
@@ -97,24 +60,6 @@ const calculateTaxRate = (
   return taxRates;
 };
 
-// Función para calcular el aumento de acciones
-const calculateSharesIncrease = (shares: number[]): (number | string)[] => {
-  const sharesIncrease: (number | string)[] = [];
-  sharesIncrease.push("N/A"); // El primer valor (TTM) no tiene un aumento anual
-  for (let i = 1; i < shares.length; i++) {
-    const currentShares = shares[i];
-    const previousShares = shares[i + 1];
-    if (previousShares === 0 || previousShares === undefined) {
-      sharesIncrease.push("N/A");
-    } else {
-      const increase =
-        ((currentShares - previousShares) / previousShares) * 100;
-      sharesIncrease.push(parseFloat(increase.toFixed(2)));
-    }
-  }
-  return sharesIncrease;
-};
-
 export default function FutureFinancialTable({
   ticker,
 }: FutureFinancialTableProps) {
@@ -126,17 +71,45 @@ export default function FutureFinancialTable({
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(
-        `/api/proyecciones-futuras?ticker=${currentTicker}`
-      );
-      if (!response.ok) {
-        throw new Error("No se pudo obtener la respuesta de la API");
+      // Realiza llamadas a todas las APIs en paralelo
+      const [incomeResponse, balanceResponse, cashFlowResponse] =
+        await Promise.all([
+          fetch(`/api/income-statement?ticker=${currentTicker}`),
+          fetch(`/api/balance-sheet?ticker=${currentTicker}`),
+          fetch(`/api/free-cash-flow?ticker=${currentTicker}`),
+        ]);
+
+      if (!incomeResponse.ok) {
+        throw new Error("No se pudo obtener datos del Income Statement.");
       }
-      const result = await response.json();
-      if (result.error) {
-        throw new Error(result.error);
+      if (!balanceResponse.ok) {
+        throw new Error("No se pudo obtener datos del Balance Sheet.");
       }
-      setData(result);
+      if (!cashFlowResponse.ok) {
+        throw new Error("No se pudo obtener datos del Cash Flow.");
+      }
+
+      const incomeData = await incomeResponse.json();
+      const balanceData = await balanceResponse.json();
+      const cashFlowData = await cashFlowResponse.json();
+
+      if (incomeData.error || balanceData.error || cashFlowData.error) {
+        throw new Error(
+          incomeData.error || balanceData.error || cashFlowData.error
+        );
+      }
+
+      // Combina los datos de las tres APIs
+      const combinedData: FinancialData = {
+        headers: incomeData.headers, // Se asume que los encabezados son los mismos
+        metrics: {
+          ...incomeData.metrics,
+          ...balanceData.metrics,
+          ...cashFlowData.metrics,
+        },
+      };
+
+      setData(combinedData);
     } catch (err: any) {
       setError(err.message);
       console.error(err);
@@ -150,52 +123,47 @@ export default function FutureFinancialTable({
     if (ticker) {
       fetchData(ticker);
     }
-  }, [ticker]); // Se ejecuta cada vez que el ticker cambia
+  }, [ticker]);
 
   const tableRows: TableRow[] = data
     ? [
-        { name: "Total Revenue", values: data.metrics.totalRevenue },
         {
-          name: "Sales Growth (%)",
-          values: calculateSalesGrowth(data.metrics.totalRevenue),
-        },
-        { name: "Cost of Revenue", values: data.metrics.costOfRevenue },
-        { name: "Gross Profit", values: data.metrics.grossProfit },
-        { name: "EBIT", values: data.metrics.ebit },
-        {
-          name: "EBIT Margin (%)",
-          values: calculateEbitMargin(
-            data.metrics.ebit,
-            data.metrics.totalRevenue
-          ),
-        },
-        { name: "EBITDA", values: data.metrics.ebitda },
-        { name: "Net Income", values: data.metrics.netIncome },
-        { name: "Basic EPS", values: data.metrics.basicEps },
-        { name: "Diluted EPS", values: data.metrics.dilutedEps },
-        {
-          name: "Basic Average Shares",
-          values: data.metrics.basicAverageShares,
+          name: "Número de acciones en circulación",
+          values:
+            data.metrics.ordinarySharesNumber ||
+            data.metrics.basicAverageShares ||
+            [],
         },
         {
-          name: "Shares Increase (%)",
-          values: calculateSharesIncrease(data.metrics.basicAverageShares),
+          name: "Ventas (Revenue)",
+          values: data.metrics.totalRevenue || [],
         },
         {
-          name: "Diluted Average Shares",
-          values: data.metrics.dilutedAverageShares,
+          name: "EBIT",
+          values: data.metrics.ebit || [],
         },
-        { name: "Tax Rate for Calcs", values: data.metrics.taxRateForCalcs },
         {
-          name: "Real Tax Rate (%)",
+          name: "EBITDA",
+          values: data.metrics.ebitda || [],
+        },
+        {
+          name: "Free Cash Flow (FCF)",
+          values: data.metrics.freeCashFlow || [],
+        },
+        {
+          name: "Deuda Total",
+          values: data.metrics.totalDebt || [],
+        },
+        {
+          name: "Efectivo y equivalentes",
+          values: data.metrics.cashAndCashEquivalents || [],
+        },
+        {
+          name: "Tasa de impuestos (%)",
           values: calculateTaxRate(
-            data.metrics.taxRateForCalcs,
-            data.metrics.netIncome
+            data.metrics.taxRateForCalcs || [],
+            data.metrics.pretaxIncome || []
           ),
-        },
-        {
-          name: "Tax Effect of Unusual Items",
-          values: data.metrics.taxEffectOfUnusualItems,
         },
       ]
     : [];
