@@ -9,15 +9,8 @@ interface Props {
 
 interface ValuationData {
   ltm: number;
-  ntm: number;
   target: number;
 }
-
-interface MultiplesData {
-  headers: string[];
-  metrics: { [key: string]: number[] }; // Corregimos el tipo a number[]
-}
-
 interface IncomeStatementData {
   metrics: {
     ebit: number[];
@@ -36,14 +29,6 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
     [key: string]: ValuationData;
   }>({});
   const [loading, setLoading] = useState<boolean>(true);
-
-  // Mantenemos los objetivos "hardcodeados" inicialmente
-  const hardcodedTargets = {
-    PER: 0,
-    EV_EBITDA: 0,
-    EV_EBIT: 0,
-    EV_FCF: 0,
-  };
 
   const metricDescriptions: { [key: string]: string } = {
     PER: "Mide cuánto están los inversores dispuestos a pagar por cada dólar de ganancias de una empresa. Se calcula dividiendo el precio de la acción entre el EPS.",
@@ -87,8 +72,6 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
         // Extraemos los valores del LTM (primer elemento del array) de forma segura
         const trailingPE =
           (keyStatisticsData.metrics["trailingPE"] || [])[0] || 0;
-        const forwardPE =
-          (keyStatisticsData.metrics["forwardPE"] || [])[0] || 0;
         const enterpriseValue =
           (keyStatisticsData.metrics["enterpriseValue"] || [])[0] || 0;
 
@@ -105,34 +88,22 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
           EV_FCF: ltmFCF !== 0 ? enterpriseValue / ltmFCF : 0,
         };
 
-        // Para los próximos 12 meses (NTM), solo el P/E está disponible directamente
-        const ntmMetrics = {
-          PER: forwardPE,
-          EV_EBITDA: 0,
-          EV_EBIT: 0,
-          EV_FCF: 0,
-        };
-
         setValuationMetrics({
           PER: {
             ltm: ltmMetrics.PER,
-            ntm: ntmMetrics.PER,
-            target: hardcodedTargets.PER,
+            target: 0
           },
           EV_EBITDA: {
             ltm: ltmMetrics.EV_EBITDA,
-            ntm: ntmMetrics.EV_EBITDA,
-            target: hardcodedTargets.EV_EBITDA,
+            target: 0
           },
           EV_EBIT: {
             ltm: ltmMetrics.EV_EBIT,
-            ntm: ntmMetrics.EV_EBIT,
-            target: hardcodedTargets.EV_EBIT,
+            target: 0
           },
           EV_FCF: {
             ltm: ltmMetrics.EV_FCF,
-            ntm: ntmMetrics.EV_FCF,
-            target: hardcodedTargets.EV_FCF,
+            target: 0
           },
         });
       } catch (error) {
@@ -188,7 +159,6 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
           <tr className="border-b border-gray-200 text-gray-500">
             <th className="py-2">Métrica</th>
             <th className="py-2">LTM</th>
-            <th className="py-2">NTM</th>
             <th className="py-2">Objetivo</th>
           </tr>
         </thead>
@@ -203,7 +173,6 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
                 </Tooltip>
               </td>
               <td className="py-2">{value.ltm?.toFixed(2) || "-"}</td>
-              <td className="py-2">{value.ntm?.toFixed(2) || "-"}</td>
               <td className="py-2 text-red-600 font-bold">
                 <input
                   type="number"
