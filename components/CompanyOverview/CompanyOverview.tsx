@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ApiAssetItem } from "@/types/api";
 import DataListItem from "../Shared/DataListItem";
-import { translateText } from "@/app/actions/translateAction";
+import { translateText } from "@/app/actions/translateActions";
 import NetIncomeChart from "../NetIncomeChart/NetIncomeChart";
 import TotalRevenueChart from "../TotalRevenueChart/TotalRevenueChart";
 

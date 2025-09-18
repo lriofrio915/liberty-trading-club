@@ -14,13 +14,14 @@ import LoadingSpinner from "../Shared/LoadingSpinner";
 import ErrorDisplay from "../Shared/ErrorDisplay";
 import ValuationDashboard from "../ValuationDashboard/ValuationDashboard";
 import FutureFinancialTable from "../FutureFinancialTable/FutureFinancialTable";
+// --- 1. IMPORTAR EL NUEVO COMPONENTE ---
+import GeminiAnalysis from "../GeminiAnalysis/GeminiAnalysis";
 
 interface ReportPageProps {
   ticker: string;
 }
 
 export default function ReportPage({ ticker }: ReportPageProps) {
-  // El estado espera un solo objeto de tipo ApiAssetItem o null
   const [assetData, setAssetData] = useState<ApiAssetItem | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,10 +30,7 @@ export default function ReportPage({ ticker }: ReportPageProps) {
     setLoading(true);
     setError(null);
     try {
-      // --- CORRECCIÓN DEL ENDPOINT API ---
-      // La ruta API es `/api/[ticker]`, no `/api/stocks?tickers=`.
-      // Se construye la URL correctamente.
-      const apiUrl = `${window.location.origin}/api/${ticker}`;
+      const apiUrl = `/api/stocks?tickers=${ticker}&fullData=true`;
       const response = await fetch(apiUrl);
       if (!response.ok) {
         throw new Error(`Fallo al obtener los datos de ${ticker}.`);
@@ -45,9 +43,8 @@ export default function ReportPage({ ticker }: ReportPageProps) {
         return;
       }
 
-      // La API devuelve `assetData: [formattedData]`, por lo que necesitamos acceder al primer elemento
-      if (apiResponse.assetData && apiResponse.assetData.length > 0) {
-        setAssetData(apiResponse.assetData[0]); // Aquí se espera un `ApiAssetItem`
+      if (apiResponse.data && apiResponse.data.length > 0) {
+        setAssetData(apiResponse.data[0]);
       } else {
         setError(`No se encontraron datos para ${ticker}.`);
       }
@@ -64,8 +61,10 @@ export default function ReportPage({ ticker }: ReportPageProps) {
   }, [ticker]);
 
   useEffect(() => {
-    fetchAssetData();
-  }, [fetchAssetData]);
+    if (ticker) {
+      fetchAssetData();
+    }
+  }, [fetchAssetData, ticker]);
 
   if (loading) {
     return <LoadingSpinner ticker={ticker} />;
@@ -111,7 +110,10 @@ export default function ReportPage({ ticker }: ReportPageProps) {
         <AnalystPerspectives assetData={assetData} />
         <Conclusion assetData={assetData} />
         <FutureFinancialTable ticker={ticker} />
-        {/* Aquí se pasa el objeto único assetData a StocksDisplay */}
+
+        {/* --- 2. AÑADIR EL COMPONENTE DE IA AQUÍ --- */}
+        {/* Pasamos el assetData que ya cargamos para que la IA lo analice */}
+        <GeminiAnalysis assetData={assetData} />
 
         <footer className="text-center mt-12 pt-8 border-t border-gray-200">
           <h3 className="font-bold mb-2 text-[#0A2342]">Aviso Legal</h3>
