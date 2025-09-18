@@ -1,3 +1,4 @@
+// components/ReportPage/ReportPage.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -14,7 +15,6 @@ import LoadingSpinner from "../Shared/LoadingSpinner";
 import ErrorDisplay from "../Shared/ErrorDisplay";
 import ValuationDashboard from "../ValuationDashboard/ValuationDashboard";
 import FutureFinancialTable from "../FutureFinancialTable/FutureFinancialTable";
-// --- 1. IMPORTAR EL NUEVO COMPONENTE ---
 import GeminiAnalysis from "../GeminiAnalysis/GeminiAnalysis";
 
 interface ReportPageProps {
@@ -30,6 +30,7 @@ export default function ReportPage({ ticker }: ReportPageProps) {
     setLoading(true);
     setError(null);
     try {
+      // ÚNICA LLAMADA A LA API PARA OBTENER TODOS LOS DATOS
       const apiUrl = `/api/stocks?tickers=${ticker}&fullData=true`;
       const response = await fetch(apiUrl);
       if (!response.ok) {
@@ -66,25 +67,16 @@ export default function ReportPage({ ticker }: ReportPageProps) {
     }
   }, [fetchAssetData, ticker]);
 
-  if (loading) {
-    return <LoadingSpinner ticker={ticker} />;
-  }
-
-  if (error) {
-    return <ErrorDisplay error={error} />;
-  }
-
-  if (!assetData) {
+  if (loading) return <LoadingSpinner ticker={ticker} />;
+  if (error) return <ErrorDisplay error={error} />;
+  if (!assetData)
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center text-gray-700">
-          <p className="text-xl font-semibold">
-            No se pudieron cargar los datos del activo {ticker}.
-          </p>
-        </div>
+        <p className="text-xl font-semibold text-center text-gray-700">
+          No se pudieron cargar los datos del activo {ticker}.
+        </p>
       </div>
     );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 pt-2 font-inter">
@@ -100,7 +92,8 @@ export default function ReportPage({ ticker }: ReportPageProps) {
           </p>
         </header>
 
-        <ValuationDashboard ticker={ticker} apiData={assetData.data} />
+        {/* TODOS LOS COMPONENTES AHORA RECIBEN LOS DATOS YA CARGADOS */}
+        <ValuationDashboard assetData={assetData} />
         <CompanyOverview assetData={assetData} />
         <MarketAnalysis assetData={assetData} />
         <PerformanceChart assetData={assetData} />
@@ -109,10 +102,7 @@ export default function ReportPage({ ticker }: ReportPageProps) {
         <Profitability assetData={assetData} />
         <AnalystPerspectives assetData={assetData} />
         <Conclusion assetData={assetData} />
-        <FutureFinancialTable ticker={ticker} />
-
-        {/* --- 2. AÑADIR EL COMPONENTE DE IA AQUÍ --- */}
-        {/* Pasamos el assetData que ya cargamos para que la IA lo analice */}
+        <FutureFinancialTable assetData={assetData} />
         <GeminiAnalysis assetData={assetData} />
 
         <footer className="text-center mt-12 pt-8 border-t border-gray-200">

@@ -1,25 +1,21 @@
 // types/valuation.ts
 
-export interface MultiplesData {
+// Describe un único múltiplo con sus valores LTM, NTM y objetivo
+export interface MultipleData {
   ltm: number | string;
   ntm: number | string;
-  target: number | string;
+  target?: number | string; // El objetivo puede ser opcional
 }
 
-export interface ValuationMetrics {
-  per: MultiplesData;
-  ev_fcf: MultiplesData;
-  ev_ebitda: MultiplesData;
-  ev_ebit: MultiplesData;
+// Define la estructura del objeto de múltiplos
+export interface ValuationMultiples {
+  per: MultipleData;
+  ev_fcf: MultipleData;
+  ev_ebitda: MultipleData;
+  ev_ebit: MultipleData;
 }
 
-export interface ProjectionsData {
-  salesGrowth: string;
-  ebitMargin: string;
-  taxRate: string;
-  sharesIncrease: string;
-}
-
+// Describe un resultado de valoración para un año específico
 export interface ValuationResult {
   per_ex_cash: number;
   ev_fcf: number;
@@ -27,17 +23,14 @@ export interface ValuationResult {
   ev_ebit: number;
 }
 
-export interface AssetData {
-  ticker: string;
+// --- ✨ INTERFAZ EXPORTADA Y CORREGIDA ---
+// Esta es la interfaz principal que faltaba exportar.
+// La renombramos a `ValuationDataType` para evitar confusiones con nombres de componentes.
+export interface ValuationDataType {
   currentPrice: number;
-  multiples: ValuationMetrics;
-  projections: ProjectionsData;
+  multiples: ValuationMultiples;
   valuationResults: {
-    "2022e": ValuationResult;
-    "2023e": ValuationResult;
-    "2024e": ValuationResult;
-    "2025e": ValuationResult;
-    "2026e": ValuationResult;
+    [year: string]: ValuationResult; // Permite años dinámicos
   };
   marginOfSafety: number | string;
   cagrResults: {

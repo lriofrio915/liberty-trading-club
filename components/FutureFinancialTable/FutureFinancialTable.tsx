@@ -1,245 +1,178 @@
+// components/FutureFinancialTable/FutureFinancialTable.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { ApiAssetItem } from "@/types/api";
+import { getRawValue, getTimestampFromDate } from "@/lib/valuationCalculations";
 
-// Define la interfaz para la estructura de los datos financieros combinados
-interface FinancialData {
-  headers: string[];
-  metrics: {
-    // Métricas del Income Statement
-    totalRevenue: number[];
-    ebit: number[];
-    ebitda: number[];
-    netIncome: number[];
-    basicAverageShares: number[];
-    pretaxIncome: number[];
-    taxRateForCalcs: number[];
-    // Métricas del Balance Sheet
-    ordinarySharesNumber: number[];
-    totalDebt: number[];
-    cashAndCashEquivalents: number[];
-    // Métricas del Cash Flow
-    freeCashFlow: number[];
-  };
+interface FutureFinancialTableProps {
+  assetData: ApiAssetItem;
 }
 
-// Define la interfaz para los datos de la tabla
 interface TableRow {
   name: string;
   values: (number | string)[];
 }
 
-interface FutureFinancialTableProps {
-  ticker: string;
-}
-
-const formatNumber = (num: number) => {
+const formatNumber = (num: number): string => {
   if (num === 0) return "0";
+  const absNum = Math.abs(num);
+  if (absNum >= 1_000_000_000) {
+    return `${(num / 1_000_000_000).toFixed(2)}B`;
+  }
+  if (absNum >= 1_000_000) {
+    return `${(num / 1_000_000).toFixed(2)}M`;
+  }
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 0,
   }).format(num);
 };
 
-// Función para calcular la tasa impositiva real
 const calculateTaxRate = (
   taxProvisions: number[],
   pretaxIncomes: number[]
-): (number | string)[] => {
-  const taxRates: (number | string)[] = [];
-  for (let i = 0; i < taxProvisions.length; i++) {
-    const taxProvision = taxProvisions[i];
-    const pretaxIncome = pretaxIncomes[i];
-    if (pretaxIncome === 0) {
-      taxRates.push("N/A");
-    } else {
-      const rate = (taxProvision / pretaxIncome) * 100;
-      taxRates.push(parseFloat(rate.toFixed(2)));
-    }
-  }
-  return taxRates;
+): string[] => {
+  return pretaxIncomes.map((pretax, index) => {
+    const tax = taxProvisions[index];
+    if (pretax === undefined || tax === undefined || pretax === 0) return "N/A";
+    const rate = (tax / pretax) * 100;
+    return `${rate.toFixed(2)}%`;
+  });
 };
 
 export default function FutureFinancialTable({
-  ticker,
+  assetData,
 }: FutureFinancialTableProps) {
-  const [data, setData] = useState<FinancialData | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const { ticker, data } = assetData;
+  const incomeHistory =
+    data.incomeStatementHistory?.incomeStatementHistory || [];
+  const balanceHistory = data.balanceSheetHistory?.balanceSheetStatements || [];
+  const cashflowHistory =
+    data.cashflowStatementHistory?.cashflowStatements || [];
 
-  const fetchData = async (currentTicker: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Realiza llamadas a todas las APIs en paralelo
-      const [incomeResponse, balanceResponse, cashFlowResponse] =
-        await Promise.all([
-          fetch(`/api/income-statement?ticker=${currentTicker}`),
-          fetch(`/api/balance-sheet?ticker=${currentTicker}`),
-          fetch(`/api/free-cash-flow?ticker=${currentTicker}`),
-        ]);
+  // --- ✨ CORRECCIÓN APLICADA AQUÍ ---
+  // 1. Extraemos todos los años, incluso si hay duplicados.
+  const allHeaders = incomeHistory.map((item) =>
+    new Date(getTimestampFromDate(item.endDate) * 1000).getFullYear().toString()
+  );
 
-      if (!incomeResponse.ok) {
-        throw new Error("No se pudo obtener datos del Income Statement.");
-      }
-      if (!balanceResponse.ok) {
-        throw new Error("No se pudo obtener datos del Balance Sheet.");
-      }
-      if (!cashFlowResponse.ok) {
-        throw new Error("No se pudo obtener datos del Cash Flow.");
-      }
+  // 2. Creamos un array de años únicos usando `Set` para renderizar los encabezados.
+  //    Lo ordenamos numéricamente para asegurar el orden cronológico.
+  const uniqueHeaders = [...new Set(allHeaders)].sort(
+    (a, b) => parseInt(a) - parseInt(b)
+  );
 
-      const incomeData = await incomeResponse.json();
-      const balanceData = await balanceResponse.json();
-      const cashFlowData = await cashFlowResponse.json();
+  const tableRows: TableRow[] = [
+    {
+      name: "Acciones en circulación",
+      values: balanceHistory
+        .map(
+          (item) =>
+            getRawValue(item.ordinarySharesNumber) ||
+            getRawValue(item.shareIssued)
+        )
+        .reverse(),
+    },
+    {
+      name: "Ventas (Revenue)",
+      values: incomeHistory
+        .map((item) => getRawValue(item.totalRevenue))
+        .reverse(),
+    },
+    {
+      name: "EBIT",
+      values: incomeHistory.map((item) => getRawValue(item.ebit)).reverse(),
+    },
+    {
+      name: "EBITDA",
+      values: incomeHistory.map((item) => getRawValue(item.ebitda)).reverse(),
+    },
+    {
+      name: "Free Cash Flow (FCF)",
+      values: cashflowHistory
+        .map((item) => getRawValue(item.freeCashflow))
+        .reverse(),
+    },
+    {
+      name: "Deuda Total",
+      values: balanceHistory
+        .map((item) => getRawValue(item.totalDebt))
+        .reverse(),
+    },
+    {
+      name: "Efectivo y equivalentes",
+      values: balanceHistory.map((item) => getRawValue(item.cash)).reverse(),
+    },
+    {
+      name: "Tasa de impuestos (%)",
+      values: calculateTaxRate(
+        incomeHistory.map((item) => getRawValue(item.taxProvision)).reverse(),
+        incomeHistory.map((item) => getRawValue(item.pretaxIncome)).reverse()
+      ),
+    },
+  ];
 
-      if (incomeData.error || balanceData.error || cashFlowData.error) {
-        throw new Error(
-          incomeData.error || balanceData.error || cashFlowData.error
-        );
-      }
-
-      // Combina los datos de las tres APIs
-      const combinedData: FinancialData = {
-        headers: incomeData.headers, // Se asume que los encabezados son los mismos
-        metrics: {
-          ...incomeData.metrics,
-          ...balanceData.metrics,
-          ...cashFlowData.metrics,
-        },
-      };
-
-      setData(combinedData);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-        console.error(err);
-      } else {
-        setError("Ocurrió un error inesperado.");
-        console.error("Ocurrió un error inesperado:", err);
-      }
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (ticker) {
-      fetchData(ticker);
-    }
-  }, [ticker]);
-
-  const tableRows: TableRow[] = data
-    ? [
-        {
-          name: "Número de acciones en circulación",
-          values:
-            data.metrics.ordinarySharesNumber ||
-            data.metrics.basicAverageShares ||
-            [],
-        },
-        {
-          name: "Ventas (Revenue)",
-          values: data.metrics.totalRevenue || [],
-        },
-        {
-          name: "EBIT",
-          values: data.metrics.ebit || [],
-        },
-        {
-          name: "EBITDA",
-          values: data.metrics.ebitda || [],
-        },
-        {
-          name: "Free Cash Flow (FCF)",
-          values: data.metrics.freeCashFlow || [],
-        },
-        {
-          name: "Deuda Total",
-          values: data.metrics.totalDebt || [],
-        },
-        {
-          name: "Efectivo y equivalentes",
-          values: data.metrics.cashAndCashEquivalents || [],
-        },
-        {
-          name: "Tasa de impuestos (%)",
-          values: calculateTaxRate(
-            data.metrics.taxRateForCalcs || [],
-            data.metrics.pretaxIncome || []
-          ),
-        },
-      ]
-    : [];
-
-  return (
-    <div className="container mx-auto p-4 md:p-8 bg-gray-950 text-white min-h-screen font-sans">
-      <div className="flex flex-col items-center">
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-2 text-center text-teal-400">
-          Datos Financieros de {ticker}
-        </h1>
-        <p className="text-lg md:text-xl text-gray-400 text-center mb-6">
-          Obtén datos financieros de Yahoo Finance
+  if (incomeHistory.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow-xl p-6 md:p-8 mb-12">
+        <h2 className="text-3xl font-bold text-center text-[#0A2342] mb-2">
+          Datos Financieros Históricos
+        </h2>
+        <p className="text-center text-gray-500">
+          No hay datos históricos detallados disponibles para mostrar.
         </p>
       </div>
+    );
+  }
 
-      {loading && (
-        <div className="flex items-center justify-center p-8">
-          <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-teal-500"></div>
-          <p className="ml-4 text-xl text-teal-400">Cargando...</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="text-center p-8 bg-red-900 rounded-lg shadow-lg">
-          <p className="text-red-300 text-lg">Error: {error}</p>
-        </div>
-      )}
-
-      {data && !loading && (
-        <div className="overflow-x-auto rounded-xl shadow-2xl bg-gray-800">
-          <table className="min-w-full divide-y divide-gray-700">
-            {/* Encabezados de la tabla */}
-            <thead className="bg-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Métrica
-                </th>
-                {data.headers.map((header, index) => (
-                  <th
-                    key={index}
-                    className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider"
-                  >
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            {/* Cuerpo de la tabla */}
-            <tbody className="bg-gray-800 divide-y divide-gray-700">
-              {tableRows.map((row, rowIndex) => (
-                <tr
-                  key={rowIndex}
-                  className="hover:bg-gray-700 transition-colors duration-200"
+  return (
+    <div className="bg-white rounded-lg shadow-xl p-6 md:p-8 mb-12">
+      <h2 className="text-3xl font-bold text-center text-[#0A2342] mb-6">
+        Datos Financieros Históricos de {ticker}
+      </h2>
+      <div className="overflow-x-auto rounded-xl shadow-inner bg-gray-50 p-2">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Métrica
+              </th>
+              {/* 3. Iteramos sobre los años ÚNICOS y usamos una combinación de valor + índice para la key */}
+              {uniqueHeaders.map((header, index) => (
+                <th
+                  key={`${header}-${index}`} // Clave garantizada como única
+                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-200">
-                    {row.name}
-                  </td>
-                  {row.values.map((value, colIndex) => (
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {tableRows.map((row) => (
+              <tr
+                key={row.name}
+                className="hover:bg-gray-50 transition-colors duration-200"
+              >
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800">
+                  {row.name}
+                </td>
+                {row.values
+                  .slice(0, uniqueHeaders.length)
+                  .map((value, colIndex) => (
                     <td
                       key={colIndex}
-                      className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-400"
+                      className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600"
                     >
                       {typeof value === "number" ? formatNumber(value) : value}
                     </td>
                   ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
