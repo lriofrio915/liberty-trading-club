@@ -17,15 +17,9 @@ const calculateAverageEbitMargin = (
   ebits: number[],
   revenues: number[]
 ): string => {
-  console.log("\n--- Calculando Margen EBIT Promedio ---");
-  console.log("EBITs recibidos:", ebits);
-  console.log("Revenues recibidos:", revenues);
-
   // Ignoramos el TTM que es el primer elemento
   const fiscalYearEbits = ebits.slice(1);
   const fiscalYearRevenues = revenues.slice(1);
-  console.log("Datos de EBIT (solo años fiscales):", fiscalYearEbits);
-  console.log("Datos de Revenue (solo años fiscales):", fiscalYearRevenues);
 
   if (fiscalYearEbits.length === 0 || fiscalYearRevenues.length === 0) {
     console.log(
@@ -50,7 +44,6 @@ const calculateAverageEbitMargin = (
     }
   }
 
-  console.log("Márgenes EBIT calculados por año:", ebitMargins);
 
   if (ebitMargins.length === 0) {
     console.log("No se pudieron calcular márgenes. Saliendo.");
@@ -60,17 +53,13 @@ const calculateAverageEbitMargin = (
   const averageMargin =
     ebitMargins.reduce((sum, margin) => sum + margin, 0) / ebitMargins.length;
   const result = `${averageMargin.toFixed(2)}%`;
-  console.log("Resultado final Margen EBIT:", result);
   return result;
 };
 
 // Repetimos la misma lógica robusta para las otras funciones
 
 const calculateAverageSalesGrowth = (revenues: number[]): string => {
-  console.log("\n--- Calculando Crecimiento de Ventas Promedio ---");
-  console.log("Revenues recibidos:", revenues);
   const fiscalYearRevenues = revenues.slice(1);
-  console.log("Datos de Revenue (solo años fiscales):", fiscalYearRevenues);
 
   if (fiscalYearRevenues.length < 2) {
     console.log(
@@ -96,7 +85,6 @@ const calculateAverageSalesGrowth = (revenues: number[]): string => {
   const averageGrowth =
     growthRates.reduce((sum, rate) => sum + rate, 0) / growthRates.length;
   const result = `${averageGrowth.toFixed(2)}%`;
-  console.log("Resultado final Crecimiento de Ventas:", result);
   return result;
 };
 
@@ -104,10 +92,6 @@ const calculateAverageTaxRate = (
   taxProvisions: number[],
   pretaxIncomes: number[]
 ): string => {
-  console.log("\n--- Calculando Tasa de Impuestos Promedio ---");
-  console.log("Provisiones de Impuestos recibidas:", taxProvisions);
-  console.log("Ingresos Pre-Impuestos recibidos:", pretaxIncomes);
-
   const fiscalYearTaxes = taxProvisions.slice(1);
   const fiscalYearIncomes = pretaxIncomes.slice(1);
 
@@ -131,21 +115,16 @@ const calculateAverageTaxRate = (
       }
     }
   }
-  console.log("Tasas de impuestos calculadas por año:", taxRates);
 
   if (taxRates.length === 0) return "N/A";
   const averageRate =
     taxRates.reduce((sum, rate) => sum + rate, 0) / taxRates.length;
   const result = `${averageRate.toFixed(2)}%`;
-  console.log("Resultado final Tasa de Impuestos:", result);
   return result;
 };
 
 const calculateAverageSharesIncrease = (shares: number[]): string => {
-  console.log("\n--- Calculando Aumento de Acciones Promedio ---");
-  console.log("Acciones recibidas:", shares);
   const fiscalYearShares = shares.slice(1);
-  console.log("Datos de Acciones (solo años fiscales):", fiscalYearShares);
 
   if (fiscalYearShares.length < 2) return "N/A";
 
@@ -159,14 +138,12 @@ const calculateAverageSharesIncrease = (shares: number[]): string => {
       sharesIncreases.push(increase);
     }
   }
-  console.log("Aumentos de acciones calculados:", sharesIncreases);
 
   if (sharesIncreases.length === 0) return "N/A";
   const averageIncrease =
     sharesIncreases.reduce((sum, rate) => sum + rate, 0) /
     sharesIncreases.length;
   const result = `${averageIncrease.toFixed(2)}%`;
-  console.log("Resultado final Aumento de Acciones:", result);
   return result;
 };
 
@@ -198,11 +175,6 @@ export async function GET(request: Request) {
     }
     const incomeData: IncomeStatementData = await incomeResponse.json();
 
-    console.log(
-      "DATOS RECIBIDOS DESDE /api/income-statement:",
-      JSON.stringify(incomeData, null, 2)
-    );
-
     const avgSalesGrowth = calculateAverageSalesGrowth(
       incomeData.metrics.totalRevenue
     );
@@ -224,11 +196,6 @@ export async function GET(request: Request) {
       taxRate: avgTaxRate,
       sharesIncrease: avgSharesIncrease,
     };
-
-    console.log(
-      "PROMEDIOS FINALES CALCULADOS:",
-      JSON.stringify(finalAverages, null, 2)
-    );
 
     return NextResponse.json({
       success: true,
