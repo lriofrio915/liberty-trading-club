@@ -27,12 +27,8 @@ export interface ValuationResult {
   ev_ebit: number;
 }
 
-// *** CORRECCIÓN: Renombramos 'AssetData' a 'ValuationDashboardData' para evitar conflictos ***
+// Interfaz principal para los datos del dashboard de valoración
 export interface ValuationDashboardData {
-  ticker: string;
-  currentPrice: number;
-  multiples: ValuationMetrics;
-  projections: ProjectionsData;
   valuationResults: {
     "2022e": ValuationResult;
     "2023e": ValuationResult;

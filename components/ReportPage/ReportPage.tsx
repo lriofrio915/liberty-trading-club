@@ -14,6 +14,7 @@ import LoadingSpinner from "../Shared/LoadingSpinner";
 import ErrorDisplay from "../Shared/ErrorDisplay";
 import ValuationDashboard from "../ValuationDashboard/ValuationDashboard";
 import ScrollToTopButton from "../ScrollToTopButton";
+import GeminiAnalysis from "../GeminiAnalysis/GeminiAnalysis";
 
 // Interfaz para los promedios que vienen de nuestra nueva API
 interface FinancialAverages {
@@ -135,6 +136,7 @@ export default function ReportPage({ ticker }: ReportPageProps) {
         <Profitability assetData={assetData} />
         <AnalystPerspectives assetData={assetData} />
         <Conclusion assetData={assetData} />
+        <GeminiAnalysis assetData={assetData}/>
 
         <footer className="text-center mt-12 pt-8 border-t border-gray-200">
           <h3 className="font-bold mb-2 text-[#0A2342]">Aviso Legal</h3>

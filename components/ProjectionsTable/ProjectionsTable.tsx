@@ -1,32 +1,42 @@
+// components/ProjectionsTable/ProjectionsTable.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { Dispatch, SetStateAction } from "react";
 import Tooltip from "../Shared/Tooltips";
 
-// La interfaz ahora espera los promedios calculados como props
-interface Props {
-  averages: {
-    salesGrowth: string;
-    ebitMargin: string;
-    taxRate: string;
-    sharesIncrease: string;
-  };
+// Interfaz para el estado de las estimaciones
+interface EstimatesState {
+  salesGrowth: number;
+  ebitMargin: number;
+  taxRate: number; // Añadido
+  sharesIncrease: number;
 }
 
-const ProjectionsTable: React.FC<Props> = ({ averages }) => {
-  // El estado ahora solo maneja las estimaciones del usuario
-  const [estimates, setEstimates] = useState({
-    salesGrowth: "12.00", // Valor inicial de ejemplo
-    ebitMargin: "28.00",
-    taxRate: "21.00",
-    sharesIncrease: "0.05",
-  });
+// Interfaz para los promedios recibidos como props
+interface FinancialAverages {
+  salesGrowth: string;
+  ebitMargin: string;
+  taxRate: string;
+  sharesIncrease: string;
+}
 
+// Interfaz actualizada para las Props del componente
+interface Props {
+  estimates: EstimatesState;
+  setEstimates: Dispatch<SetStateAction<EstimatesState>>;
+  financialAverages: FinancialAverages;
+}
+
+const ProjectionsTable: React.FC<Props> = ({
+  estimates,
+  setEstimates,
+  financialAverages,
+}) => {
   const projectionDescriptions: { [key: string]: string } = {
     salesGrowth:
       "Tasa de crecimiento anual promedio esperada en las ventas de la empresa.",
     ebitMargin:
-      "La rentabilidad operativa de la empresa. Mide el porcentaje de las ventas que se convierte en ganancias antes de intereses e impuestos.",
+      "La rentabilidad operativa de la empresa. Mide el porcentaje de ventas que se convierte en ganancias antes de intereses e impuestos.",
     taxRate:
       "La tasa de impuestos corporativos que se espera que pague la empresa.",
     sharesIncrease:
@@ -35,75 +45,52 @@ const ProjectionsTable: React.FC<Props> = ({ averages }) => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setEstimates((prev) => ({
-      ...prev,
-      [name]: value,
+    setEstimates((prevEstimates) => ({
+      ...prevEstimates,
+      [name]: parseFloat(value) || 0,
     }));
   };
 
-  // La data ahora se construye directamente a partir de las props y el estado
+  // *** CORRECCIÓN AQUÍ: Se añade Tax Rate a la lista de proyecciones a mostrar ***
   const projectionsToDisplay = [
-    {
-      key: "salesGrowth",
-      name: "Crecimiento de Ventas",
-      average: averages.salesGrowth,
-    },
-    { key: "ebitMargin", name: "Margen EBIT", average: averages.ebitMargin },
-    {
-      key: "taxRate",
-      name: "Tasa de Impuestos",
-      average: averages.taxRate,
-    },
-    {
-      key: "sharesIncrease",
-      name: "Aumento de Acciones",
-      average: averages.sharesIncrease,
-    },
+    { key: "salesGrowth", name: "Sales Growth" },
+    { key: "ebitMargin", name: "EBIT Margin" },
+    { key: "taxRate", name: "Tax Rate" },
+    { key: "sharesIncrease", name: "Shares Increase" },
   ];
 
   return (
-    <div className="bg-white text-gray-800 p-4 rounded-lg shadow-lg border border-gray-200 h-full">
+    <div className="bg-white text-gray-800 p-4 rounded-lg shadow-lg border border-gray-200">
       <h3 className="text-xl font-semibold mb-4">Proyección a futuro</h3>
       <table className="w-full text-left">
         <thead>
           <tr className="border-b border-gray-200 text-gray-500">
             <th className="py-2">Métrica</th>
-            <th className="py-2 text-center">
-              <div className="flex flex-col items-center">
-                <span>Promedio</span>
-                <span className="text-xs font-normal">2021-2024</span>
-              </div>
-            </th>
-            <th className="py-2 text-center">
-              <div className="flex flex-col items-center">
-                <span>Estimaciones</span>
-                <span className="text-xs font-normal">2025e-2026e</span>
-              </div>
-            </th>
+            <th className="py-2 text-center">Promedio Hist.</th>
+            <th className="py-2 text-center">Estimación (2026e)</th>
           </tr>
         </thead>
         <tbody>
-          {projectionsToDisplay.map((proj) => (
-            <tr
-              key={proj.key}
-              className="border-b border-gray-200 last:border-b-0"
-            >
+          {projectionsToDisplay.map((projection) => (
+            <tr key={projection.key} className="border-b border-gray-200">
               <td className="py-2">
-                <Tooltip text={projectionDescriptions[proj.key] || ""}>
-                  {proj.name}
+                <Tooltip text={projectionDescriptions[projection.key] || ""}>
+                  {projection.name}
                 </Tooltip>
               </td>
-              <td className="py-2 text-center font-semibold text-gray-600">
-                {proj.average}
+              <td className="py-2 text-center font-semibold">
+                {`${
+                  financialAverages[projection.key as keyof FinancialAverages]
+                }%`}
               </td>
-              <td className="py-2 text-center text-red-600 font-bold">
+              <td className="py-2 text-red-600 font-bold">
                 <div className="flex justify-center items-center">
                   <input
                     type="number"
-                    name={proj.key}
-                    value={estimates[proj.key as keyof typeof estimates]}
+                    name={projection.key}
+                    value={estimates[projection.key as keyof EstimatesState]}
                     onChange={handleInputChange}
-                    className="w-20 text-center bg-transparent border-none focus:outline-none focus:ring-0"
+                    className="w-24 text-center bg-gray-100 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     step="0.01"
                   />
                   %
