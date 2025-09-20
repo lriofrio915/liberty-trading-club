@@ -8,6 +8,8 @@ interface Props {
   averages: {
     salesGrowth: string;
     ebitMargin: string;
+    taxRate: string;
+    sharesIncrease: string;
   };
 }
 
@@ -47,12 +49,20 @@ const ProjectionsTable: React.FC<Props> = ({ averages }) => {
       average: averages.salesGrowth,
     },
     { key: "ebitMargin", name: "Margen EBIT", average: averages.ebitMargin },
-    { key: "taxRate", name: "Tasa de Impuestos", average: "N/A" }, // No se calcula un promedio para este
-    { key: "sharesIncrease", name: "Aumento de Acciones", average: "N/A" },
+    {
+      key: "taxRate",
+      name: "Tasa de Impuestos",
+      average: averages.taxRate,
+    },
+    {
+      key: "sharesIncrease",
+      name: "Aumento de Acciones",
+      average: averages.sharesIncrease,
+    },
   ];
 
   return (
-    <div className="bg-white text-gray-800 p-4 rounded-lg shadow-lg border border-gray-200">
+    <div className="bg-white text-gray-800 p-4 rounded-lg shadow-lg border border-gray-200 h-full">
       <h3 className="text-xl font-semibold mb-4">Proyección a futuro</h3>
       <table className="w-full text-left">
         <thead>
@@ -61,13 +71,13 @@ const ProjectionsTable: React.FC<Props> = ({ averages }) => {
             <th className="py-2 text-center">
               <div className="flex flex-col items-center">
                 <span>Promedio</span>
-                <span className="text-xs font-normal">Histórico</span>
+                <span className="text-xs font-normal">2021-2024</span>
               </div>
             </th>
             <th className="py-2 text-center">
               <div className="flex flex-col items-center">
                 <span>Estimaciones</span>
-                <span className="text-xs font-normal">2026e</span>
+                <span className="text-xs font-normal">2025e-2026e</span>
               </div>
             </th>
           </tr>

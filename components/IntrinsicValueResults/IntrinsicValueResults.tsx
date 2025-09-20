@@ -1,34 +1,31 @@
+// components/IntrinsicValueResults/IntrinsicValueResults.tsx
 import React from "react";
-import { ValuationResult, ValuationDataType } from "@/types/valuation";
+// Usamos el tipo renombrado para evitar conflictos
+import { ValuationDashboardData, ValuationResult } from "@/types/valuation";
 
+// *** CORRECCIÓN: Añadimos 'currentPrice' a la interfaz de Props ***
 interface Props {
-  results: ValuationDataType["valuationResults"];
+  results: ValuationDashboardData["valuationResults"];
   marginOfSafety: number | string;
-  cagrResults: ValuationDataType["cagrResults"];
-  currentPrice: number;
+  cagrResults: ValuationDashboardData["cagrResults"];
+  currentPrice: number | string; // Prop ahora requerido
 }
 
 const IntrinsicValueResults: React.FC<Props> = ({
   results,
   marginOfSafety,
   cagrResults,
-  currentPrice,
+  currentPrice, // Recibimos el nuevo prop aquí
 }) => {
   const years = Object.keys(results) as (keyof typeof results)[];
-  if (years.length === 0) return null;
-
   const metrics = Object.keys(results[years[0]]) as (keyof ValuationResult)[];
-  if (metrics.length === 0) return null;
 
-  // Calcula el promedio del precio objetivo para 2026e
-  const avg2026 =
-    Object.values(results["2026e"]).reduce((a, b) => a + b, 0) / 4;
-
-  // Calcula el CAGR a 2 años (desde el precio actual hasta el objetivo de 2026)
-  const cagr =
-    currentPrice > 0 && avg2026 > 0
-      ? ((Math.pow(avg2026 / currentPrice, 1 / 2) - 1) * 100).toFixed(2)
-      : "N/A";
+  // Calculamos el precio objetivo promedio para el último año proyectado (2026e)
+  const finalAvgPrice =
+    Object.values(results["2026e"]).reduce(
+      (sum: number, value: number) => sum + value,
+      0
+    ) / metrics.length;
 
   return (
     <div className="bg-white text-gray-800 p-4 rounded-lg shadow-lg mt-8 border border-gray-200">
@@ -36,9 +33,9 @@ const IntrinsicValueResults: React.FC<Props> = ({
         <table className="w-full text-left whitespace-nowrap">
           <thead>
             <tr className="border-b border-gray-200 text-gray-500">
-              <th className="py-2 px-4">Precio objetivo</th>
+              <th className="py-2">Precio objetivo</th>
               {years.map((year) => (
-                <th key={year} className="py-2 px-4 text-right font-semibold">
+                <th key={year} className="py-2">
                   {year}
                 </th>
               ))}
@@ -47,38 +44,27 @@ const IntrinsicValueResults: React.FC<Props> = ({
           <tbody>
             {metrics.map((metric) => (
               <tr key={metric} className="border-b border-gray-200">
-                <td className="py-2 px-4 font-semibold uppercase text-gray-700">
-                  {metric.replace(/_/g, " / ").replace("per / ex", "PER / ex")}
+                <td className="py-2 font-semibold uppercase">
+                  {metric.replace("_", " / ")}
                 </td>
                 {years.map((year) => (
-                  <td
-                    key={`${year}-${metric}`}
-                    className="py-2 px-4 text-right text-gray-600"
-                  >
-                    {results[year][metric] > 0
-                      ? `$${results[year][metric].toFixed(2)}`
-                      : "$0.00"}
+                  <td key={year} className="py-2">
+                    ${results[year][metric].toFixed(2)}
                   </td>
                 ))}
               </tr>
             ))}
-            <tr className="border-b-0 bg-gray-100">
-              <td className="py-2 px-4 font-bold text-gray-800">Promedio</td>
+            <tr className="border-b border-gray-200 bg-gray-100">
+              <td className="py-2 font-bold">Promedio</td>
               {years.map((year) => {
                 const yearResults = results[year];
-                const validValues = Object.values(yearResults).filter(
-                  (v) => v > 0
-                );
                 const avg =
-                  validValues.length > 0
-                    ? validValues.reduce((sum, value) => sum + value, 0) /
-                      validValues.length
-                    : 0;
+                  Object.values(yearResults).reduce(
+                    (sum: number, value: number) => sum + value,
+                    0
+                  ) / metrics.length;
                 return (
-                  <td
-                    key={`${year}-avg`}
-                    className="py-2 px-4 font-bold text-gray-800 text-right"
-                  >
+                  <td key={year} className="py-2 font-bold">
                     ${avg.toFixed(2)}
                   </td>
                 );
@@ -88,15 +74,33 @@ const IntrinsicValueResults: React.FC<Props> = ({
         </table>
       </div>
       <div className="flex justify-between items-center mt-4 flex-wrap gap-4">
+        {/* *** MEJORA: Mostramos una comparación clara del precio actual vs. el objetivo *** */}
+        <div className="bg-gray-100 p-3 rounded-lg flex-1 min-w-[200px] text-center">
+          <p className="text-gray-500 text-sm">
+            Precio Actual vs. Objetivo 2026e
+          </p>
+          <p className="font-bold text-2xl">
+            <span className="text-green-600">
+              $
+              {typeof currentPrice === "number"
+                ? currentPrice.toFixed(2)
+                : currentPrice}
+            </span>
+            <span className="text-gray-400 mx-2">→</span>
+            <span className="text-blue-600">${finalAvgPrice.toFixed(2)}</span>
+          </p>
+        </div>
         <div className="bg-gray-100 p-3 rounded-lg flex-1 min-w-[200px] text-center">
           <p className="text-gray-500 text-sm">Margen de seguridad</p>
           <p className="font-bold text-2xl text-green-600">{marginOfSafety}%</p>
         </div>
         <div className="bg-gray-100 p-3 rounded-lg flex-1 min-w-[200px] text-center">
           <p className="text-gray-500 text-sm">
-            Retorno Anualizado (CAGR 2 años)
+            Retorno Anualizado (CAGR 5 años)
           </p>
-          <p className="font-bold text-2xl text-green-600">{cagr}%</p>
+          <p className="font-bold text-2xl text-green-600">
+            {cagrResults.ev_fcf}%
+          </p>
         </div>
       </div>
     </div>

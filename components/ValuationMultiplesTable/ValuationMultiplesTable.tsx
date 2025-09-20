@@ -1,45 +1,106 @@
-// components/ValuationMultiplesTable/ValuationMultiplesTable.tsx
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Tooltip from "../Shared/Tooltips";
-// Importamos los tipos corregidos
-import { ValuationMultiples } from "@/types/valuation";
 
+// *** CORRECCIÓN: La interfaz de Props ahora incluye 'ticker' explícitamente ***
 interface Props {
+  ticker: string;
   currentPrice: number;
-  multiples: ValuationMultiples;
 }
 
-const ValuationMultiplesTable: React.FC<Props> = ({
-  currentPrice,
-  multiples,
-}) => {
-  const [targets, setTargets] = useState({
-    per: 20,
-    ev_fcf: 20,
-    ev_ebitda: 16,
-    ev_ebit: 16,
-  });
+interface ValuationData {
+  ltm: number;
+  target: number;
+}
 
-  const handleTargetChange = (key: keyof typeof targets, value: string) => {
-    setTargets((prev) => ({
-      ...prev,
-      [key]: parseFloat(value) || 0,
+// ... el resto del archivo permanece igual
+const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
+  const [valuationMetrics, setValuationMetrics] = useState<{
+    [key: string]: ValuationData;
+  }>({});
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const metricDescriptions: { [key: string]: string } = {
+    PER: "Mide cuánto están los inversores dispuestos a pagar por cada dólar de ganancias de una empresa. Se calcula dividiendo el precio de la acción entre el EPS.",
+    EV_EBITDA:
+      "Compara el valor total de la empresa (Enterprise Value) con las ganancias antes de intereses, impuestos, depreciación y amortización. Es una medida de la rentabilidad operativa.",
+    EV_EBIT:
+      "Similar al EV/EBITDA, pero excluye la depreciación y amortización. Útil para comparar empresas con diferentes estructuras de capital.",
+    EV_FCF:
+      "Compara el valor total de la empresa (Enterprise Value) con el flujo de caja libre. Es útil porque se enfoca en la caja real que la empresa produce.",
+  };
+
+  useEffect(() => {
+    const fetchValuationData = async () => {
+      setLoading(true);
+      try {
+        const [
+          keyStatisticsResponse,
+          incomeStatementResponse,
+          freeCashFlowResponse,
+        ] = await Promise.all([
+          fetch(`/api/key-statistics?ticker=${ticker}`).then((res) =>
+            res.json()
+          ),
+          fetch(`/api/income-statement?ticker=${ticker}`).then((res) =>
+            res.json()
+          ),
+          fetch(`/api/free-cash-flow?ticker=${ticker}`).then((res) =>
+            res.json()
+          ),
+        ]);
+
+        const keyStatisticsData: { metrics: { [key: string]: number[] } } =
+          keyStatisticsResponse;
+        const incomeStatementData: {
+          metrics: { ebitda: number[]; ebit: number[] };
+        } = incomeStatementResponse;
+        const freeCashFlowData: { metrics: { freeCashFlow: number[] } } =
+          freeCashFlowResponse;
+
+        const trailingPE =
+          (keyStatisticsData.metrics["trailingPE"] || [])[0] || 0;
+        const enterpriseValue =
+          (keyStatisticsData.metrics["enterpriseValue"] || [])[0] || 0;
+        const ltmEBITDA = (incomeStatementData.metrics.ebitda || [])[0] || 0;
+        const ltmEBIT = (incomeStatementData.metrics.ebit || [])[0] || 0;
+        const ltmFCF = (freeCashFlowData.metrics.freeCashFlow || [])[0] || 0;
+
+        const ltmMetrics = {
+          PER: trailingPE,
+          EV_EBITDA: ltmEBITDA !== 0 ? enterpriseValue / ltmEBITDA : 0,
+          EV_EBIT: ltmEBIT !== 0 ? enterpriseValue / ltmEBIT : 0,
+          EV_FCF: ltmFCF !== 0 ? enterpriseValue / ltmFCF : 0,
+        };
+
+        setValuationMetrics({
+          PER: { ltm: ltmMetrics.PER, target: 0 },
+          EV_EBITDA: { ltm: ltmMetrics.EV_EBITDA, target: 0 },
+          EV_EBIT: { ltm: ltmMetrics.EV_EBIT, target: 0 },
+          EV_FCF: { ltm: ltmMetrics.EV_FCF, target: 0 },
+        });
+      } catch (error) {
+        console.error("Failed to fetch valuation data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchValuationData();
+  }, [ticker]);
+
+  const handleTargetChange = (key: string, value: string) => {
+    setValuationMetrics((prevMetrics) => ({
+      ...prevMetrics,
+      [key]: {
+        ...prevMetrics[key],
+        target: parseFloat(value) || 0,
+      },
     }));
   };
 
-  const metricDescriptions: { [key: string]: string } = {
-    per: "Price-to-Earnings: Compara el precio de la acción con sus ganancias por acción.",
-    ev_ebitda: "Enterprise Value to EBITDA: Mide la rentabilidad operativa.",
-    ev_ebit:
-      "Enterprise Value to EBIT: Similar a EV/EBITDA, excluye depreciación.",
-    ev_fcf:
-      "Enterprise Value to Free Cash Flow: Mide la capacidad de generar efectivo.",
-  };
-
-  // --- ✨ CORRECCIÓN CLAVE AQUÍ ---
-  // Le decimos a TypeScript que las claves de 'multiples' son del tipo 'keyof ValuationMultiples'
-  const metricKeys = Object.keys(multiples) as Array<keyof ValuationMultiples>;
+  if (loading) {
+    // ... tu código de loading
+  }
 
   return (
     <div className="bg-white text-gray-800 p-4 rounded-lg shadow-lg border border-gray-200">
@@ -53,6 +114,7 @@ const ValuationMultiplesTable: React.FC<Props> = ({
         </div>
       </div>
       <table className="w-full text-left">
+        {/* ... resto de tu tabla ... */}
         <thead>
           <tr className="border-b border-gray-200 text-gray-500">
             <th className="py-2">Métrica</th>
@@ -61,27 +123,22 @@ const ValuationMultiplesTable: React.FC<Props> = ({
           </tr>
         </thead>
         <tbody>
-          {/* Usamos las claves ya tipadas para iterar */}
-          {metricKeys.map((key) => (
+          {Object.entries(valuationMetrics).map(([key, value]) => (
             <tr key={key} className="border-b border-gray-200">
               <td className="py-2 font-semibold uppercase">
-                <Tooltip text={metricDescriptions[key] || ""}>
-                  {/* El error de 'replace' se soluciona porque 'key' es ahora un string garantizado */}
+                <Tooltip
+                  text={metricDescriptions[key] || "Descripción no disponible."}
+                >
                   {key.replace("_", " / ")}
                 </Tooltip>
               </td>
-              <td className="py-2">
-                {/* Ahora TypeScript sabe que multiples[key] es válido */}
-                {typeof multiples[key].ltm === "number"
-                  ? (multiples[key].ltm as number).toFixed(2)
-                  : multiples[key].ltm}
-              </td>
+              <td className="py-2">{value.ltm?.toFixed(2) || "-"}</td>
               <td className="py-2 text-red-600 font-bold">
                 <input
                   type="number"
-                  value={targets[key]}
+                  value={value.target}
                   onChange={(e) => handleTargetChange(key, e.target.value)}
-                  className="w-20 text-right bg-transparent border-none outline-none focus:ring-0"
+                  className="w-20 text-right bg-transparent border-none outline-none"
                 />
               </td>
             </tr>
