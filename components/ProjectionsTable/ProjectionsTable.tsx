@@ -1,56 +1,54 @@
-// components/ProjectionsTable/ProjectionsTable.tsx
 "use client";
 
 import React, { useState } from "react";
 import Tooltip from "../Shared/Tooltips";
-import { RawYahooFinanceIncomeStatementItem } from "@/types/api";
-// Importamos las funciones de cálculo desde nuestro módulo de lógica
-import {
-  calculateAverageSalesGrowth,
-  calculateAverageEbitMargin,
-} from "@/lib/valuationCalculations";
 
+// La interfaz ahora espera los promedios calculados como props
 interface Props {
-  incomeStatementHistory: RawYahooFinanceIncomeStatementItem[];
+  averages: {
+    salesGrowth: string;
+    ebitMargin: string;
+  };
 }
 
-const ProjectionsTable: React.FC<Props> = ({ incomeStatementHistory }) => {
-  // Estado local solo para los inputs del usuario
+const ProjectionsTable: React.FC<Props> = ({ averages }) => {
+  // El estado ahora solo maneja las estimaciones del usuario
   const [estimates, setEstimates] = useState({
-    salesGrowth: "12.0",
-    ebitMargin: "28.0",
-    taxRate: "21.0",
-    sharesIncrease: "0.5",
+    salesGrowth: "12.00", // Valor inicial de ejemplo
+    ebitMargin: "28.00",
+    taxRate: "21.00",
+    sharesIncrease: "0.05",
   });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setEstimates((prev) => ({ ...prev, [name]: value }));
-  };
 
   const projectionDescriptions: { [key: string]: string } = {
     salesGrowth:
-      "La tasa de crecimiento anual promedio esperada en las ventas de la compañía.",
-    ebitMargin: "La rentabilidad operativa de la empresa.",
+      "Tasa de crecimiento anual promedio esperada en las ventas de la empresa.",
+    ebitMargin:
+      "La rentabilidad operativa de la empresa. Mide el porcentaje de las ventas que se convierte en ganancias antes de intereses e impuestos.",
     taxRate:
       "La tasa de impuestos corporativos que se espera que pague la empresa.",
     sharesIncrease:
-      "El cambio proyectado en el número de acciones en circulación.",
+      "El cambio proyectado en el número de acciones en circulación, que afecta el valor por acción.",
   };
 
-  // Usamos las funciones de cálculo importadas
-  const averageData = {
-    salesGrowth: calculateAverageSalesGrowth(incomeStatementHistory),
-    ebitMargin: calculateAverageEbitMargin(incomeStatementHistory),
-    taxRate: "21.00%", // Placeholder - puedes crear la función de cálculo
-    sharesIncrease: "0.50%", // Placeholder - puedes crear la función de cálculo
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEstimates((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
+  // La data ahora se construye directamente a partir de las props y el estado
   const projectionsToDisplay = [
-    { key: "salesGrowth", name: "Sales Growth" },
-    { key: "ebitMargin", name: "EBIT Margin" },
-    { key: "taxRate", name: "Tax Rate" },
-    { key: "sharesIncrease", name: "Shares Increase" },
+    {
+      key: "salesGrowth",
+      name: "Crecimiento de Ventas",
+      average: averages.salesGrowth,
+    },
+    { key: "ebitMargin", name: "Margen EBIT", average: averages.ebitMargin },
+    { key: "taxRate", name: "Tasa de Impuestos", average: "N/A" }, // No se calcula un promedio para este
+    { key: "sharesIncrease", name: "Aumento de Acciones", average: "N/A" },
   ];
 
   return (
@@ -60,20 +58,33 @@ const ProjectionsTable: React.FC<Props> = ({ incomeStatementHistory }) => {
         <thead>
           <tr className="border-b border-gray-200 text-gray-500">
             <th className="py-2">Métrica</th>
-            <th className="py-2 text-center">Promedio Histórico</th>
-            <th className="py-2 text-center">Estimación 2026e</th>
+            <th className="py-2 text-center">
+              <div className="flex flex-col items-center">
+                <span>Promedio</span>
+                <span className="text-xs font-normal">Histórico</span>
+              </div>
+            </th>
+            <th className="py-2 text-center">
+              <div className="flex flex-col items-center">
+                <span>Estimaciones</span>
+                <span className="text-xs font-normal">2026e</span>
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody>
           {projectionsToDisplay.map((proj) => (
-            <tr key={proj.key} className="border-b border-gray-200">
+            <tr
+              key={proj.key}
+              className="border-b border-gray-200 last:border-b-0"
+            >
               <td className="py-2">
                 <Tooltip text={projectionDescriptions[proj.key] || ""}>
                   {proj.name}
                 </Tooltip>
               </td>
-              <td className="py-2 text-center font-semibold">
-                {averageData[proj.key as keyof typeof averageData]}
+              <td className="py-2 text-center font-semibold text-gray-600">
+                {proj.average}
               </td>
               <td className="py-2 text-center text-red-600 font-bold">
                 <div className="flex justify-center items-center">
@@ -83,7 +94,7 @@ const ProjectionsTable: React.FC<Props> = ({ incomeStatementHistory }) => {
                     value={estimates[proj.key as keyof typeof estimates]}
                     onChange={handleInputChange}
                     className="w-20 text-center bg-transparent border-none focus:outline-none focus:ring-0"
-                    step="0.1"
+                    step="0.01"
                   />
                   %
                 </div>

@@ -15,8 +15,8 @@ import {
   RawYahooFinanceBalanceSheetItem,
   RawYahooFinanceIncomeStatementItem,
   YahooFinanceModule,
-  QuoteSummaryCashflowStatementHistory, // Importar si se usa directamente
-  QuoteSummaryBalanceSheetHistory, // Importar si se usa directamente
+  QuoteSummaryCashflowStatementHistory,
+  QuoteSummaryBalanceSheetHistory, 
 } from "@/types/api";
 
 export async function GET(

@@ -53,7 +53,7 @@ export default function GeminiAnalysis({ assetData }: GeminiAnalysisProps) {
           <button
             onClick={handleGenerateAnalysis}
             disabled={isLoading}
-            className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold rounded-full shadow-lg hover:scale-105 transform transition-transform duration-300 ease-in-out"
+            className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold rounded-full shadow-lg hover:scale-105 transform transition-transform duration-300 ease-in-out cursor-pointer"
           >
             <SparklesIcon className="h-5 w-5 mr-2" />
             {isLoading ? "Analizando..." : "Generar Análisis de Valor"}

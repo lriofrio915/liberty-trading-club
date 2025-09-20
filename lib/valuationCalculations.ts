@@ -1,151 +1,183 @@
-// lib/valuationCalculations.ts
 import {
   QuoteSummaryResult,
   YahooFinanceRawValue,
   RawYahooFinanceIncomeStatementItem,
-  YahooFinanceDateValue,
 } from "@/types/api";
+import { ValuationDataType, ValuationResult } from "@/types/valuation";
 
-// --- Función de Ayuda Exportable ---
-// Esta función es clave. La usaremos en toda la app para manejar este tipo de dato.
-export const getRawValue = (
+// --- Funciones de Ayuda Internas (No exportadas) ---
+
+const getRawValue = (
   value: number | YahooFinanceRawValue | undefined | null
 ): number => {
   if (typeof value === "object" && value !== null && "raw" in value) {
-    return value.raw;
+    return typeof value.raw === "number" ? value.raw : 0;
   }
   return typeof value === "number" ? value : 0;
 };
 
-// Esta función se encarga de obtener el timestamp (en segundos) desde un objeto de fecha.
-export const getTimestampFromDate = (
-  date: Date | YahooFinanceDateValue | undefined | null
-): number => {
-  if (date instanceof Date) {
-    // .getTime() devuelve milisegundos, lo dividimos para obtener segundos
-    return Math.floor(date.getTime() / 1000);
-  }
-  if (typeof date === "object" && date !== null && "raw" in date) {
-    // La API ya nos da el timestamp en segundos
-    return date.raw;
-  }
-  // Si no hay fecha, devolvemos 0 o un valor por defecto
-  return 0;
-};
-
-// --- Funciones de Cálculo para Proyecciones ---
-
-export const calculateAverageSalesGrowth = (
-  statements: RawYahooFinanceIncomeStatementItem[]
-): string => {
-  if (statements.length < 2) return "N/A";
-  // Usamos getRawValue para extraer el número de forma segura
-  const revenues = statements.map((s) => getRawValue(s.totalRevenue)).reverse(); // Revertimos para ir del más antiguo al más nuevo
-
+const calculateAverageGrowth = (values: number[]): number => {
+  if (values.length < 2) return 0;
   const growthRates: number[] = [];
-  for (let i = 1; i < revenues.length; i++) {
-    if (revenues[i - 1] !== 0) {
-      const growth =
-        ((revenues[i] - revenues[i - 1]) / Math.abs(revenues[i - 1])) * 100;
-      growthRates.push(growth);
+  // Se asume que el array está ordenado del más reciente al más antiguo
+  const reversedValues = [...values].reverse(); // Creamos una copia para no mutar el original
+
+  for (let i = 1; i < reversedValues.length; i++) {
+    const previous = reversedValues[i - 1];
+    const current = reversedValues[i];
+    if (previous !== 0) {
+      growthRates.push((current - previous) / Math.abs(previous));
     }
   }
-
-  if (growthRates.length === 0) return "N/A";
-  const averageGrowth =
-    growthRates.reduce((sum, rate) => sum + rate, 0) / growthRates.length;
-  return `${averageGrowth.toFixed(2)}%`;
+  if (growthRates.length === 0) return 0;
+  return (growthRates.reduce((a, b) => a + b, 0) / growthRates.length) * 100;
 };
 
-export const calculateAverageEbitMargin = (
-  statements: RawYahooFinanceIncomeStatementItem[]
-): string => {
-  if (statements.length === 0) return "N/A";
-  const margins = statements
-    .map((s) => {
-      const ebit = getRawValue(s.ebit);
-      const revenue = getRawValue(s.totalRevenue);
-      return revenue !== 0 ? (ebit / revenue) * 100 : 0;
-    })
-    .filter((margin) => margin !== 0);
+// --- Función Principal de Procesamiento (Exportada) ---
 
-  if (margins.length === 0) return "N/A";
-  const averageMargin =
-    margins.reduce((sum, margin) => sum + margin, 0) / margins.length;
-  return `${averageMargin.toFixed(2)}%`;
-};
-
-// --- Función Principal de Procesamiento (la mantendremos aquí por ahora) ---
-export const processValuationData = (apiData: QuoteSummaryResult) => {
-  // ... (El resto de la lógica de processValuationData que ya teníamos)
+export const processValuationData = (
+  apiData: QuoteSummaryResult
+): ValuationDataType & {
+  averages: { salesGrowth: string; ebitMargin: string };
+} => {
+  // --- 1. Extracción de Datos Base ---
   const currentPrice = getRawValue(apiData.price?.regularMarketPrice);
+  const sharesOutstanding = getRawValue(
+    apiData.defaultKeyStatistics?.sharesOutstanding
+  );
+  const totalCash = getRawValue(apiData.financialData?.totalCash);
   const enterpriseValue = getRawValue(
     apiData.defaultKeyStatistics?.enterpriseValue
   );
-  const ebitda = getRawValue(apiData.financialData?.ebitda);
+  const cashPerShare =
+    sharesOutstanding > 0 ? totalCash / sharesOutstanding : 0;
 
-  const evToEbitda = ebitda !== 0 ? enterpriseValue / ebitda : 0;
+  // --- 2. Extracción de Historial y Datos LTM ---
+  const incomeHistory =
+    apiData.incomeStatementHistory?.incomeStatementHistory ?? [];
+  const latestIncomeStatement = incomeHistory[0]; // TTM
 
-  const multiples = {
-    per: {
-      ltm: getRawValue(apiData.summaryDetail?.trailingPE),
-      ntm: getRawValue(apiData.summaryDetail?.forwardPE),
-    },
-    ev_ebitda: { ltm: evToEbitda, ntm: evToEbitda },
-    ev_fcf: { ltm: "N/A", ntm: "N/A" },
-    ev_ebit: { ltm: "N/A", ntm: "N/A" },
-  };
+  const trailingEps = getRawValue(apiData.defaultKeyStatistics?.trailingEps);
+  const ltmEbitda = getRawValue(latestIncomeStatement?.ebitda);
+  const ltmEbit = getRawValue(latestIncomeStatement?.ebit);
 
-  // Placeholder para resultados de valoración
-  const valuationResults = {
-    "2022e": {
-      per_ex_cash: 221.71,
-      ev_fcf: 224.9,
-      ev_ebitda: 240.74,
-      ev_ebit: 222.92,
-    },
-    "2023e": {
-      per_ex_cash: 248.66,
-      ev_fcf: 252.23,
-      ev_ebitda: 269.51,
-      ev_ebit: 249.56,
-    },
-    "2024e": {
-      per_ex_cash: 278.83,
-      ev_fcf: 282.83,
-      ev_ebitda: 301.71,
-      ev_ebit: 279.38,
-    },
+  const financialHistory = apiData.financialHistory ?? [];
+  const ltmFcf =
+    financialHistory.find((item) => item.year === "TTM")?.freeCashFlow ?? 0;
+
+  const ltmFcfPerShare = sharesOutstanding > 0 ? ltmFcf / sharesOutstanding : 0;
+  const ltmEbitdaPerShare =
+    sharesOutstanding > 0 ? ltmEbitda / sharesOutstanding : 0;
+  const ltmEbitPerShare =
+    sharesOutstanding > 0 ? ltmEbit / sharesOutstanding : 0;
+
+  // --- 3. Cálculo de Promedios para ProjectionsTable ---
+  const historicalRevenues = incomeHistory.map((s) =>
+    getRawValue(s.totalRevenue)
+  );
+  const historicalEbits = incomeHistory.map((s) => getRawValue(s.ebit));
+
+  const averageSalesGrowth = calculateAverageGrowth(historicalRevenues);
+  const averageEbitMargin =
+    historicalRevenues.reduce((a, b) => a + b, 0) !== 0
+      ? (historicalEbits.reduce((a, b) => a + b, 0) /
+          historicalRevenues.reduce((a, b) => a + b, 0)) *
+        100
+      : 0;
+
+  // --- 4. Proyecciones y Múltiplos Objetivo ---
+  const growthRate = averageSalesGrowth / 100; // Usamos el crecimiento promedio calculado
+  const targets = { per: 20, ev_fcf: 20, ev_ebitda: 16, ev_ebit: 16 };
+
+  const projectedMetrics = {
     "2025e": {
-      per_ex_cash: 312.61,
-      ev_fcf: 317.08,
-      ev_ebitda: 337.76,
-      ev_ebit: 312.77,
+      eps: trailingEps * (1 + growthRate),
+      fcfPerShare: ltmFcfPerShare * (1 + growthRate),
+      ebitdaPerShare: ltmEbitdaPerShare * (1 + growthRate),
+      ebitPerShare: ltmEbitPerShare * (1 + growthRate),
     },
     "2026e": {
-      per_ex_cash: 350.42,
-      ev_fcf: 355.42,
-      ev_ebitda: 378.12,
-      ev_ebit: 350.14,
+      eps: trailingEps * Math.pow(1 + growthRate, 2),
+      fcfPerShare: ltmFcfPerShare * Math.pow(1 + growthRate, 2),
+      ebitdaPerShare: ltmEbitdaPerShare * Math.pow(1 + growthRate, 2),
+      ebitPerShare: ltmEbitPerShare * Math.pow(1 + growthRate, 2),
     },
   };
 
-  const finalPrice = valuationResults["2026e"].ev_fcf;
-  const marginOfSafety =
-    currentPrice > 0 ? ((finalPrice - currentPrice) / currentPrice) * 100 : 0;
-  const cagr =
-    currentPrice > 0 ? ((finalPrice / currentPrice) ** (1 / 5) - 1) * 100 : 0;
+  // --- 5. Cálculo de Valores Intrínsecos ---
+  const valuationResults: ValuationDataType["valuationResults"] = {
+    "2022e": { per_ex_cash: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 },
+    "2023e": { per_ex_cash: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 },
+    "2024e": { per_ex_cash: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 },
+    "2025e": {
+      per_ex_cash: projectedMetrics["2025e"].eps * targets.per + cashPerShare,
+      ev_fcf: projectedMetrics["2025e"].fcfPerShare * targets.ev_fcf,
+      ev_ebitda: projectedMetrics["2025e"].ebitdaPerShare * targets.ev_ebitda,
+      ev_ebit: projectedMetrics["2025e"].ebitPerShare * targets.ev_ebit,
+    },
+    "2026e": {
+      per_ex_cash: projectedMetrics["2026e"].eps * targets.per + cashPerShare,
+      ev_fcf: projectedMetrics["2026e"].fcfPerShare * targets.ev_fcf,
+      ev_ebitda: projectedMetrics["2026e"].ebitdaPerShare * targets.ev_ebitda,
+      ev_ebit: projectedMetrics["2026e"].ebitPerShare * targets.ev_ebit,
+    },
+  };
 
+  // --- 6. Cálculo Final de Margen de Seguridad y CAGR ---
+  const avg2026 =
+    Object.values(valuationResults["2026e"]).reduce((a, b) => a + b, 0) / 4;
+  const marginOfSafety =
+    currentPrice > 0 ? (avg2026 / currentPrice - 1) * 100 : 0;
+  const cagr =
+    currentPrice > 0 && avg2026 > 0
+      ? (Math.pow(avg2026 / currentPrice, 1 / 2) - 1) * 100
+      : 0;
+
+  // --- 7. Ensamblaje del Objeto Final ---
   return {
     currentPrice,
-    multiples,
+    multiples: {
+      per: {
+        ltm: getRawValue(apiData.defaultKeyStatistics?.trailingPE),
+        ntm: getRawValue(apiData.defaultKeyStatistics?.forwardPE),
+        target: targets.per,
+      },
+      ev_fcf: {
+        ltm:
+          enterpriseValue && ltmFcf
+            ? (enterpriseValue / ltmFcf).toFixed(2)
+            : "N/A",
+        ntm: "N/A",
+        target: targets.ev_fcf,
+      },
+      ev_ebitda: {
+        ltm:
+          enterpriseValue && ltmEbitda
+            ? (enterpriseValue / ltmEbitda).toFixed(2)
+            : "N/A",
+        ntm: "N/A",
+        target: targets.ev_ebitda,
+      },
+      ev_ebit: {
+        ltm:
+          enterpriseValue && ltmEbit
+            ? (enterpriseValue / ltmEbit).toFixed(2)
+            : "N/A",
+        ntm: "N/A",
+        target: targets.ev_ebit,
+      },
+    },
     valuationResults,
-    marginOfSafety,
+    marginOfSafety: marginOfSafety.toFixed(2),
     cagrResults: {
       per: cagr,
       ev_fcf: cagr,
       ev_ebitda: cagr,
       ev_ebit: cagr,
+    },
+    averages: {
+      salesGrowth: `${averageSalesGrowth.toFixed(2)}%`,
+      ebitMargin: `${averageEbitMargin.toFixed(2)}%`,
     },
   };
 };

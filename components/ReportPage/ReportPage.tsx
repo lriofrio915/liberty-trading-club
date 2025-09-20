@@ -16,6 +16,7 @@ import ErrorDisplay from "../Shared/ErrorDisplay";
 import ValuationDashboard from "../ValuationDashboard/ValuationDashboard";
 import FutureFinancialTable from "../FutureFinancialTable/FutureFinancialTable";
 import GeminiAnalysis from "../GeminiAnalysis/GeminiAnalysis";
+import ScrollToTopButton from "../ScrollToTopButton";
 
 interface ReportPageProps {
   ticker: string;
@@ -93,6 +94,7 @@ export default function ReportPage({ ticker }: ReportPageProps) {
         </header>
 
         {/* TODOS LOS COMPONENTES AHORA RECIBEN LOS DATOS YA CARGADOS */}
+        <ScrollToTopButton />
         <ValuationDashboard assetData={assetData} />
         <CompanyOverview assetData={assetData} />
         <MarketAnalysis assetData={assetData} />
@@ -102,7 +104,7 @@ export default function ReportPage({ ticker }: ReportPageProps) {
         <Profitability assetData={assetData} />
         <AnalystPerspectives assetData={assetData} />
         <Conclusion assetData={assetData} />
-        <FutureFinancialTable assetData={assetData} />
+        {/* <FutureFinancialTable assetData={assetData} /> */}
         <GeminiAnalysis assetData={assetData} />
 
         <footer className="text-center mt-12 pt-8 border-t border-gray-200">
