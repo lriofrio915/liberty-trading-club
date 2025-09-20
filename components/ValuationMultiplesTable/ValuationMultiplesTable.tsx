@@ -1,8 +1,8 @@
+// components/ValuationMultiplesTable/ValuationMultiplesTable.tsx
 "use client";
 import React, { useState, useEffect } from "react";
 import Tooltip from "../Shared/Tooltips";
 
-// *** CORRECCIÓN: La interfaz de Props ahora incluye 'ticker' explícitamente ***
 interface Props {
   ticker: string;
   currentPrice: number;
@@ -13,7 +13,13 @@ interface ValuationData {
   target: number;
 }
 
-// ... el resto del archivo permanece igual
+interface ValuationMultiplesResponse {
+  PER: number;
+  EV_EBITDA: number;
+  EV_EBIT: number;
+  EV_FCF: number;
+}
+
 const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
   const [valuationMetrics, setValuationMetrics] = useState<{
     [key: string]: ValuationData;
@@ -34,58 +40,32 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
     const fetchValuationData = async () => {
       setLoading(true);
       try {
-        const [
-          keyStatisticsResponse,
-          incomeStatementResponse,
-          freeCashFlowResponse,
-        ] = await Promise.all([
-          fetch(`/api/key-statistics?ticker=${ticker}`).then((res) =>
-            res.json()
-          ),
-          fetch(`/api/income-statement?ticker=${ticker}`).then((res) =>
-            res.json()
-          ),
-          fetch(`/api/free-cash-flow?ticker=${ticker}`).then((res) =>
-            res.json()
-          ),
-        ]);
-
-        const keyStatisticsData: { metrics: { [key: string]: number[] } } =
-          keyStatisticsResponse;
-        const incomeStatementData: {
-          metrics: { ebitda: number[]; ebit: number[] };
-        } = incomeStatementResponse;
-        const freeCashFlowData: { metrics: { freeCashFlow: number[] } } =
-          freeCashFlowResponse;
-
-        const trailingPE =
-          (keyStatisticsData.metrics["trailingPE"] || [])[0] || 0;
-        const enterpriseValue =
-          (keyStatisticsData.metrics["enterpriseValue"] || [])[0] || 0;
-        const ltmEBITDA = (incomeStatementData.metrics.ebitda || [])[0] || 0;
-        const ltmEBIT = (incomeStatementData.metrics.ebit || [])[0] || 0;
-        const ltmFCF = (freeCashFlowData.metrics.freeCashFlow || [])[0] || 0;
-
-        const ltmMetrics = {
-          PER: trailingPE,
-          EV_EBITDA: ltmEBITDA !== 0 ? enterpriseValue / ltmEBITDA : 0,
-          EV_EBIT: ltmEBIT !== 0 ? enterpriseValue / ltmEBIT : 0,
-          EV_FCF: ltmFCF !== 0 ? enterpriseValue / ltmFCF : 0,
-        };
+        // --- ÚNICO CAMBIO: Apuntamos a la nueva ruta /api/valuation-multiples ---
+        const response = await fetch(
+          `/api/valuation-multiples?ticker=${ticker}`
+        );
+        if (!response.ok) {
+          throw new Error("Error al obtener los múltiplos de valoración.");
+        }
+        const multiples: ValuationMultiplesResponse = await response.json();
 
         setValuationMetrics({
-          PER: { ltm: ltmMetrics.PER, target: 0 },
-          EV_EBITDA: { ltm: ltmMetrics.EV_EBITDA, target: 0 },
-          EV_EBIT: { ltm: ltmMetrics.EV_EBIT, target: 0 },
-          EV_FCF: { ltm: ltmMetrics.EV_FCF, target: 0 },
+          PER: { ltm: multiples.PER, target: 0 },
+          EV_EBITDA: { ltm: multiples.EV_EBITDA, target: 0 },
+          EV_EBIT: { ltm: multiples.EV_EBIT, target: 0 },
+          EV_FCF: { ltm: multiples.EV_FCF, target: 0 },
         });
       } catch (error) {
         console.error("Failed to fetch valuation data:", error);
+        // Opcional: podrías poner un estado de error aquí para mostrarlo en la UI
       } finally {
         setLoading(false);
       }
     };
-    fetchValuationData();
+
+    if (ticker) {
+      fetchValuationData();
+    }
   }, [ticker]);
 
   const handleTargetChange = (key: string, value: string) => {
@@ -114,7 +94,6 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
         </div>
       </div>
       <table className="w-full text-left">
-        {/* ... resto de tu tabla ... */}
         <thead>
           <tr className="border-b border-gray-200 text-gray-500">
             <th className="py-2">Métrica</th>
@@ -138,7 +117,7 @@ const ValuationMultiplesTable: React.FC<Props> = ({ ticker, currentPrice }) => {
                   type="number"
                   value={value.target}
                   onChange={(e) => handleTargetChange(key, e.target.value)}
-                  className="w-20 text-right bg-transparent border-none outline-none"
+                  className="w-20 text-right bg-transparent border-none outline-none focus:ring-0"
                 />
               </td>
             </tr>

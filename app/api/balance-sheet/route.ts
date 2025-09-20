@@ -1,11 +1,10 @@
-// Extrae la tabla de "Balance Sheet" de Yahoo Finance para un ticker dado.
-
+// app/api/balance-sheet/route.ts
 import { NextResponse } from "next/server";
 import { chromium, Browser } from "playwright";
 
-// Define la interfaz con las nuevas métricas.
+// ... (La interfaz BalanceSheetResponse permanece igual)
 type BalanceSheetResponse = {
-  headers: string[]; // p.ej. ["1/31/2025","1/31/2024","1/31/2023","1/31/2022"]
+  headers: string[];
   metrics: {
     totalAssets: number[];
     totalLiabilitiesNetMinorityInterest: number[];
@@ -21,22 +20,18 @@ type BalanceSheetResponse = {
     netDebt: number[];
     shareIssued: number[];
     ordinarySharesNumber: number[];
-    // Se añade la nueva métrica
     currentAssets: number[];
   };
 };
 
-/** Convierte "2,450,670" o "-" a número */
 const cleanAndParseValue = (text: string) => {
   if (!text || text.trim() === "-" || text.trim() === "—") return 0;
   const value = parseFloat(text.replace(/,/g, ""));
-  return Number.isFinite(value) ? value : 0;
+  // CAMBIO AQUÍ: Multiplicamos por 1000 porque los datos de esta página están en miles.
+  return Number.isFinite(value) ? value * 1000 : 0;
 };
 
-/**
- * Lista de filas a extraer (tal como las muestra Yahoo en Balance Sheet).
- * Usamos varias variantes de búsqueda para mayor tolerancia a cambios menores.
- */
+// ... (El resto del archivo permanece igual, desde ROWS hasta el final)
 const ROWS: Record<keyof BalanceSheetResponse["metrics"], string[]> = {
   totalAssets: ["total assets"],
   totalLiabilitiesNetMinorityInterest: [
@@ -61,7 +56,6 @@ const ROWS: Record<keyof BalanceSheetResponse["metrics"], string[]> = {
   netDebt: ["net debt"],
   shareIssued: ["share issued", "shares issued"],
   ordinarySharesNumber: ["ordinary shares number", "ordinary shares"],
-  // Se añade una variante de búsqueda para 'Current Assets'
   currentAssets: ["current assets", "total current assets"],
 };
 
@@ -86,14 +80,10 @@ export async function GET(request: Request) {
     const url = `https://finance.yahoo.com/quote/${ticker}/balance-sheet/`;
     await page.goto(url, { waitUntil: "domcontentloaded" });
 
-    // Un ancla estable: el <h1> con el nombre del activo
     await page.waitForSelector("h1", { timeout: 20000 });
 
-    // Simular el clic para expandir "Total Assets"
     try {
-      // Selector más robusto para el botón de expansión
       await page.click('div.row:has-text("Total Assets") button');
-      // Esperar un momento para que el contenido se cargue dinámicamente
       await page.waitForTimeout(1000);
     } catch {
       console.warn(
@@ -101,7 +91,6 @@ export async function GET(request: Request) {
       );
     }
 
-    // Re-evaluamos para cada fila deseada (evita mover mucha lógica al navegador)
     const rowValues: Record<string, string[]> = {};
     await page.waitForSelector("div.tableBody .row .rowTitle", {
       timeout: 15000,
@@ -116,7 +105,6 @@ export async function GET(request: Request) {
           const title =
             row.querySelector(".rowTitle")?.textContent?.trim() || "";
           const titleNorm = title.replace(/\s+/g, " ").trim().toLowerCase();
-          // Lógica de búsqueda mejorada para 'Current Assets'
           return labels.some((l) => titleNorm.includes(l));
         });
         if (!target) return [];
@@ -127,7 +115,6 @@ export async function GET(request: Request) {
       rowValues[key] = values;
     }
 
-    // También toma los encabezados ya que en el primer evaluate no los usamos
     const headers = await page.evaluate(() => {
       const headerRow = document.querySelector("div.tableHeader .row");
       const cols = Array.from(headerRow?.querySelectorAll("div.column") || [])
@@ -177,14 +164,12 @@ export async function GET(request: Request) {
         ordinarySharesNumber: (rowValues["ordinarySharesNumber"] || []).map(
           cleanAndParseValue
         ),
-        // Se añade el nuevo campo
         currentAssets: (rowValues["currentAssets"] || []).map(
           cleanAndParseValue
         ),
       },
     };
 
-    // Validación básica: al menos una fila con datos
     const hasAnyData = Object.values(formatted.metrics).some(
       (arr) => Array.isArray(arr) && arr.length > 0
     );
@@ -194,7 +179,9 @@ export async function GET(request: Request) {
 
     return NextResponse.json(formatted);
   } catch (err) {
-    console.error("Error Balance Sheet scraping:", err);
+    const errorMessage =
+      err instanceof Error ? err.message : "Error desconocido";
+    console.error("Error Balance Sheet scraping:", errorMessage);
     return NextResponse.json(
       { error: "Error al obtener el Balance Sheet desde Yahoo." },
       { status: 500 }

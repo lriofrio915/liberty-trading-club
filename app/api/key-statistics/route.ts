@@ -1,35 +1,39 @@
-// API Route para el App Router de Next.js (versión 13+)
-// Este script extrae múltiplos de valoración de la página de Yahoo Finance
-// para un ticker específico.
-
+// app/api/key-statistics/route.ts
 import { NextResponse } from "next/server";
 import { chromium } from "playwright";
 
 /**
  * Limpia y convierte una cadena de texto de un valor financiero a un número.
- * @param text El texto del valor (e.g., "16.13B", "1.87k", "--").
- * @returns El valor numérico.
+ * @param text El texto del valor (e.g., "3.89T", "16.13B", "--").
+ * @returns El valor numérico completo.
  */
 const cleanAndParseValue = (text: string): number => {
   if (!text || text.trim() === "--") {
     return 0;
   }
-  // Elimina las comas y convierte a número, manejando sufijos (B, M, k)
+
+  // Elimina las comas y extrae el número base
   let value = parseFloat(text.replace(/,/g, ""));
-  if (text.includes("B")) {
-    value *= 1e9;
+
+  // --- INICIO DE LA ACTUALIZACIÓN ---
+  // Maneja los sufijos para Trillones (T), Billones (B), Millones (M) y miles (k)
+  if (text.includes("T")) {
+    value *= 1e12; // 1 Trillón = 1,000,000,000,000
+  } else if (text.includes("B")) {
+    value *= 1e9; // 1 Billón = 1,000,000,000
   } else if (text.includes("M")) {
-    value *= 1e6;
+    value *= 1e6; // 1 Millón = 1,000,000
   } else if (text.includes("k")) {
-    value *= 1e3;
+    value *= 1e3; // 1 Mil = 1,000
   }
+  // --- FIN DE LA ACTUALIZACIÓN ---
+
   return isNaN(value) ? 0 : value;
 };
 
 export async function GET(request: Request) {
   let browser;
   try {
-    // Extrae el ticker del parámetro de consulta
     const { searchParams } = new URL(request.url);
     const ticker = searchParams.get("ticker");
 
@@ -40,20 +44,16 @@ export async function GET(request: Request) {
       );
     }
 
-    // Inicia un navegador Chromium en modo headless
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
 
     const url = `https://finance.yahoo.com/quote/${ticker}/key-statistics/`;
     await page.goto(url, { waitUntil: "domcontentloaded" });
 
-    // Espera a que el título de la página sea visible
     await page.waitForSelector("h1", { timeout: 20000 });
 
     const valuationData = await page.evaluate(() => {
-      // Función auxiliar para obtener los valores de una fila por su título
       const getRowValues = (rowTitle: string): string[] => {
-        // Selector actualizado para encontrar las filas de la tabla de valoración
         const row = Array.from(
           document.querySelectorAll(
             "section[data-testid='qsp-statistics'] table tr"
@@ -69,7 +69,6 @@ export async function GET(request: Request) {
         return Array.from(columns).map((col) => col.textContent?.trim() || "");
       };
 
-      // Obtiene los encabezados de la tabla (las fechas)
       const headerRow = document.querySelector(
         "section[data-testid='qsp-statistics'] table thead tr"
       );
@@ -77,7 +76,6 @@ export async function GET(request: Request) {
         .map((th) => th.textContent?.trim() || "")
         .filter((header) => header !== "");
 
-      // Extrae todas las filas de la tabla
       return {
         headers,
         marketCap: getRowValues("Market Cap"),
@@ -92,12 +90,10 @@ export async function GET(request: Request) {
       };
     });
 
-    // Si no se encuentra ningún dato, lanza un error
     if (Object.values(valuationData).every((val) => !val || val.length === 0)) {
       throw new Error("No se encontraron los datos de valoración.");
     }
 
-    // Procesa y formatea los datos extraídos
     const formattedData = {
       headers: valuationData.headers,
       metrics: {
@@ -117,11 +113,11 @@ export async function GET(request: Request) {
 
     return NextResponse.json(formattedData);
   } catch (error) {
-    if (error instanceof Error) {
-      console.error("Error durante el web scraping:", error.message);
-    } else {
-      console.error("Ocurrió un error desconocido:", error);
-    }
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(
+      "Error durante el web scraping de key-statistics:",
+      errorMessage
+    );
     return NextResponse.json(
       { error: "Error al obtener los datos de valoración." },
       { status: 500 }

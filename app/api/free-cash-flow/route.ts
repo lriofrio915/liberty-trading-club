@@ -1,5 +1,4 @@
-// Extrae la tabla de "Cash Flow" de Yahoo Finance para un ticker dado.
-
+// app/api/free-cash-flow/route.ts
 import { NextResponse } from "next/server";
 import { chromium, Browser } from "playwright";
 
@@ -27,10 +26,13 @@ const cleanAndParseValue = (text: string) => {
     text.trim() === "--"
   )
     return 0;
+
   const value = parseFloat(text.replace(/,/g, ""));
-  return Number.isFinite(value) ? value : 0;
+  // CAMBIO AQUÍ: Multiplicamos por 1000 porque los datos de esta página están en miles.
+  return Number.isFinite(value) ? value * 1000 : 0;
 };
 
+// ... (El resto del archivo permanece igual)
 const ROWS: Record<keyof CashFlowResponse["metrics"], string[]> = {
   operatingCashFlow: ["operating cash flow"],
   investingCashFlow: ["investing cash flow"],
@@ -66,7 +68,6 @@ export async function GET(request: Request) {
 
     await page.waitForSelector("h1", { timeout: 20000 });
 
-    // Extraer headers
     const headers = await page.evaluate(() => {
       const headerRow = document.querySelector("div.tableHeader .row");
       const cols = Array.from(headerRow?.querySelectorAll("div.column") || [])
@@ -144,7 +145,9 @@ export async function GET(request: Request) {
 
     return NextResponse.json(formatted);
   } catch (err) {
-    console.error("Error Cash Flow scraping:", err);
+    const errorMessage =
+      err instanceof Error ? err.message : "Error desconocido";
+    console.error("Error Cash Flow scraping:", errorMessage);
     return NextResponse.json(
       { error: "Error al obtener Cash Flow desde Yahoo." },
       { status: 500 }
