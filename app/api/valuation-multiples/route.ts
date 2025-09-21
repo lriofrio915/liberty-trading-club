@@ -2,17 +2,22 @@
 
 import { NextResponse } from "next/server";
 
-// Interfaz para la respuesta final de esta API
+// Interfaz para la respuesta final de esta API, ahora con LTM y NTM
 interface ValuationMultiplesResponse {
-  PER: number;
-  EV_EBITDA: number;
-  EV_EBIT: number;
-  EV_FCF: number;
+  per: { ltm: number; ntm: number };
+  ev_ebitda: { ltm: number; ntm: string };
+  ev_ebit: { ltm: number; ntm: string };
+  ev_fcf: { ltm: number; ntm: string };
 }
 
 // Interfaces para los datos que esperamos de nuestras APIs de scraping
 interface KeyStatisticsData {
-  metrics: { [key: string]: number[] };
+  metrics: {
+    trailingPE?: number[];
+    forwardPE?: number[];
+    enterpriseValue?: number[];
+    [key: string]: number[] | undefined;
+  };
 }
 interface IncomeStatementData {
   metrics: { ebitda: number[]; ebit: number[] };
@@ -72,14 +77,29 @@ export async function GET(request: Request) {
     const ltmEBIT = (incomeStatementData.metrics.ebit || [])[0] || 0;
     const ltmFCF = (freeCashFlowData.metrics.freeCashFlow || [])[0] || 0;
 
-    // --- CONSOLE LOGS DE VALORES EXTRAÍDOS ---
+    // --- NUEVO: Extraemos los valores NTM (Next Twelve Months) ---
+    const forwardPE = (keyStatisticsData.metrics["forwardPE"] || [])[0] || 0;
+    // Nota: No tenemos datos NTM para EBITDA, EBIT, o FCF desde las APIs actuales,
+    // por lo que los devolveremos como "N/A".
 
-    // 4. Realizamos los cálculos
+    // 4. Realizamos los cálculos y estructuramos la respuesta
     const calculatedMetrics: ValuationMultiplesResponse = {
-      PER: trailingPE,
-      EV_EBITDA: ltmEBITDA !== 0 ? enterpriseValue / ltmEBITDA : 0,
-      EV_EBIT: ltmEBIT !== 0 ? enterpriseValue / ltmEBIT : 0,
-      EV_FCF: ltmFCF !== 0 ? enterpriseValue / ltmFCF : 0,
+      per: {
+        ltm: trailingPE,
+        ntm: forwardPE,
+      },
+      ev_ebitda: {
+        ltm: ltmEBITDA !== 0 ? enterpriseValue / ltmEBITDA : 0,
+        ntm: "N/A",
+      },
+      ev_ebit: {
+        ltm: ltmEBIT !== 0 ? enterpriseValue / ltmEBIT : 0,
+        ntm: "N/A",
+      },
+      ev_fcf: {
+        ltm: ltmFCF !== 0 ? enterpriseValue / ltmFCF : 0,
+        ntm: "N/A",
+      },
     };
 
     // 5. Devolvemos la respuesta

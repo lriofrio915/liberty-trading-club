@@ -7,10 +7,10 @@ export interface MultiplesData {
 }
 
 export interface ValuationMetrics {
-  per: MultiplesData;
-  ev_fcf: MultiplesData;
-  ev_ebitda: MultiplesData;
-  ev_ebit: MultiplesData;
+  per: { ltm: number; ntm: number };
+  ev_ebitda: { ltm: number; ntm: string };
+  ev_ebit: { ltm: number; ntm: string };
+  ev_fcf: { ltm: number; ntm: string };
 }
 
 export interface ProjectionsData {
@@ -25,16 +25,27 @@ export interface ValuationResult {
   ev_fcf: number;
   ev_ebitda: number;
   ev_ebit: number;
+  [key: string]: number; // Firma de índice para acceso dinámico
 }
 
-// Interfaz principal para los datos del dashboard de valoración
-export interface ValuationDashboardData {
+// CORRECCIÓN: Renombrado de 'ValuationDashboardData' a 'AssetData' para consistencia
+export interface AssetData {
+  ticker: string;
+  currentPrice: number;
+  multiples: {
+    per: MultiplesData;
+    ev_fcf: MultiplesData;
+    ev_ebitda: MultiplesData;
+    ev_ebit: MultiplesData;
+  };
+  projections: ProjectionsData;
   valuationResults: {
     "2022e": ValuationResult;
     "2023e": ValuationResult;
     "2024e": ValuationResult;
     "2025e": ValuationResult;
     "2026e": ValuationResult;
+    ntm: ValuationResult;
   };
   marginOfSafety: number | string;
   cagrResults: {

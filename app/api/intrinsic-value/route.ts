@@ -4,14 +4,18 @@ import { NextResponse } from "next/server";
 
 // Interfaces para los datos que esperamos de nuestras APIs de scraping
 interface KeyStatisticsData {
-  metrics: { [key: string]: number[] };
+  metrics: {
+    forwardPE?: number[];
+    enterpriseValue?: number[];
+    [key: string]: number[] | undefined;
+  };
 }
 interface IncomeStatementData {
   metrics: {
     totalRevenue: number[];
     ebitda: number[];
     ebit: number[];
-    netIncome: number[]; // Se añade para el cálculo de PER
+    netIncome: number[];
   };
 }
 interface FreeCashFlowData {
@@ -22,6 +26,7 @@ interface BalanceSheetData {
     totalDebt: number[];
     cashAndCashEquivalents: number[];
     ordinarySharesNumber: number[];
+    netDebt: number[];
   };
 }
 
@@ -48,7 +53,7 @@ export async function POST(request: Request) {
 
     const baseUrl = new URL(request.url).origin;
 
-    // 1. Obtener todos los datos base LTM necesarios en paralelo
+    // 1. Obtener todos los datos base LTM y NTM necesarios en paralelo
     const [keyStatsRes, incomeStatementRes, freeCashFlowRes, balanceSheetRes] =
       await Promise.all([
         fetch(`${baseUrl}/api/key-statistics?ticker=${ticker}`),
@@ -76,20 +81,17 @@ export async function POST(request: Request) {
 
     // 2. Extraer y calcular valores LTM (base para 2025e)
     const ltmNetIncome = (incomeStatementData.metrics.netIncome || [])[0] || 0;
-    const ltmEnterpriseValue =
-      (keyStatsData.metrics["enterpriseValue"] || [])[0] || 0;
     const ltmRevenue = (incomeStatementData.metrics.totalRevenue || [])[0] || 0;
     const ltmEBITDA = (incomeStatementData.metrics.ebitda || [])[0] || 0;
     const ltmEBIT = (incomeStatementData.metrics.ebit || [])[0] || 0;
     const ltmFCF = (freeCashFlowData.metrics.freeCashFlow || [])[0] || 0;
-    const totalDebt = (balanceSheetData.metrics.totalDebt || [])[0] || 0;
-    const cash =
-      (balanceSheetData.metrics.cashAndCashEquivalents || [])[0] || 0;
     const sharesOutstanding =
       (balanceSheetData.metrics.ordinarySharesNumber || [])[0] || 1;
-
-    const netDebt = totalDebt - cash;
+    const ltmNetDebt = (balanceSheetData.metrics.netDebt || [])[0] || 0;
     const ltmEPS = sharesOutstanding > 0 ? ltmNetIncome / sharesOutstanding : 0;
+
+    // --- AÑADIDO: Extraer y calcular valores NTM ---
+    const forwardEPS = (keyStatsData.metrics.forwardPE || [])[0] || 0;
 
     // 3. Proyectar métricas para 2026e usando las estimaciones del usuario
     const projectedRevenue2026 = ltmRevenue * (1 + estimates.salesGrowth / 100);
@@ -98,70 +100,87 @@ export async function POST(request: Request) {
 
     const ebitdaToEbitRatio = ltmEBIT > 0 ? ltmEBITDA / ltmEBIT : 1.1;
     const fcfToEbitRatio = ltmEBIT > 0 ? ltmFCF / ltmEBIT : 0.8;
-    const netIncomeToEbitRatio = ltmEBIT > 0 ? ltmNetIncome / ltmEBIT : 0.7;
 
     const projectedEBITDA2026 = projectedEBIT2026 * ebitdaToEbitRatio;
     const projectedFCF2026 = projectedEBIT2026 * fcfToEbitRatio;
-    const projectedNetIncome2026 = projectedEBIT2026 * netIncomeToEbitRatio;
     const projectedShares2026 =
       sharesOutstanding * (1 + estimates.sharesIncrease / 100);
     const projectedEPS2026 =
       projectedShares2026 > 0
-        ? projectedNetIncome2026 / projectedShares2026
+        ? (projectedEBIT2026 * (ltmEBIT > 0 ? ltmNetIncome / ltmEBIT : 0.7)) /
+          projectedShares2026
         : 0;
 
-    // 4. Calcular precios objetivos para 2026e (usando múltiplos OBJETIVO y métricas PROYECTADAS)
-    const price2026e = {
-      per_ex_cash:
-        projectedShares2026 > 0
-          ? targets.per * projectedEPS2026 - netDebt / projectedShares2026
+    // --- AÑADIDO: Proyectar métricas para NTM ---
+    const projectedRevenueNTM =
+      ltmRevenue * (1 + estimates.salesGrowth / 100 / 2); // Crecimiento a 6 meses
+    const projectedEBITNTM = projectedRevenueNTM * (estimates.ebitMargin / 100);
+    const projectedEBITDANTM = projectedEBITNTM * ebitdaToEbitRatio;
+    const projectedFCFNTM = projectedEBITNTM * fcfToEbitRatio;
+
+    // 4. Construir la respuesta final
+    const zeroYear = { per_ex_cash: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 };
+
+    const price2025e = {
+      per_ex_cash: targets.per * ltmEPS,
+      ev_ebitda:
+        sharesOutstanding > 0
+          ? (targets.ev_ebitda * ltmEBITDA - ltmNetDebt) / sharesOutstanding
           : 0,
+      ev_ebit:
+        sharesOutstanding > 0
+          ? (targets.ev_ebit * ltmEBIT - ltmNetDebt) / sharesOutstanding
+          : 0,
+      ev_fcf:
+        sharesOutstanding > 0
+          ? (targets.ev_fcf * ltmFCF - ltmNetDebt) / sharesOutstanding
+          : 0,
+    };
+
+    const price2026e = {
+      per_ex_cash: targets.per * projectedEPS2026,
       ev_ebitda:
         projectedShares2026 > 0
-          ? (targets.ev_ebitda * projectedEBITDA2026 - netDebt) /
+          ? (targets.ev_ebitda * projectedEBITDA2026 - ltmNetDebt) /
             projectedShares2026
           : 0,
       ev_ebit:
         projectedShares2026 > 0
-          ? (targets.ev_ebit * projectedEBIT2026 - netDebt) /
+          ? (targets.ev_ebit * projectedEBIT2026 - ltmNetDebt) /
             projectedShares2026
           : 0,
       ev_fcf:
         projectedShares2026 > 0
-          ? (targets.ev_fcf * projectedFCF2026 - netDebt) / projectedShares2026
+          ? (targets.ev_fcf * projectedFCF2026 - ltmNetDebt) /
+            projectedShares2026
           : 0,
     };
 
-    // 5. Construir la respuesta final
-    const zeroYear = { per_ex_cash: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 };
+    const ntmPrice = {
+      per_ex_cash: targets.per * forwardEPS,
+      ev_ebitda:
+        sharesOutstanding > 0
+          ? (targets.ev_ebitda * projectedEBITDANTM - ltmNetDebt) /
+            sharesOutstanding
+          : 0,
+      ev_ebit:
+        sharesOutstanding > 0
+          ? (targets.ev_ebit * projectedEBITNTM - ltmNetDebt) /
+            sharesOutstanding
+          : 0,
+      ev_fcf:
+        sharesOutstanding > 0
+          ? (targets.ev_fcf * projectedFCFNTM - ltmNetDebt) / sharesOutstanding
+          : 0,
+    };
+
     const finalResponse = {
       "2022e": zeroYear,
       "2023e": zeroYear,
       "2024e": zeroYear,
-      "2025e": {
-        // Los valores de 2025e se calculan con los múltiplos y métricas LTM
-        per_ex_cash:
-          sharesOutstanding > 0
-            ? (keyStatsData.metrics.trailingPE[0] ?? 0) * ltmEPS -
-              netDebt / sharesOutstanding
-            : 0,
-        ev_ebitda:
-          sharesOutstanding > 0 && ltmEBITDA > 0
-            ? (ltmEnterpriseValue / ltmEBITDA) * ltmEBITDA -
-              netDebt / sharesOutstanding
-            : 0,
-        ev_ebit:
-          sharesOutstanding > 0 && ltmEBIT > 0
-            ? (ltmEnterpriseValue / ltmEBIT) * ltmEBIT -
-              netDebt / sharesOutstanding
-            : 0,
-        ev_fcf:
-          sharesOutstanding > 0 && ltmFCF > 0
-            ? (ltmEnterpriseValue / ltmFCF) * ltmFCF -
-              netDebt / sharesOutstanding
-            : 0,
-      },
+      "2025e": price2025e,
       "2026e": price2026e,
+      ntm: ntmPrice,
     };
 
     return NextResponse.json({ success: true, results: finalResponse });

@@ -1,7 +1,9 @@
+// components/ReportPage/ReportPage.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { ApiAssetItem } from "@/types/api";
+import { ValuationMetrics } from "@/types/valuation";
 import CompanyOverview from "../CompanyOverview/CompanyOverview";
 import MarketAnalysis from "../MarketAnalysis/MarketAnalysis";
 import PerformanceChart from "../PerformanceChart/PerformanceChart";
@@ -16,7 +18,6 @@ import ValuationDashboard from "../ValuationDashboard/ValuationDashboard";
 import ScrollToTopButton from "../ScrollToTopButton";
 import GeminiAnalysis from "../GeminiAnalysis/GeminiAnalysis";
 
-// Interfaz para los promedios que vienen de nuestra nueva API
 interface FinancialAverages {
   salesGrowth: string;
   ebitMargin: string;
@@ -32,6 +33,10 @@ export default function ReportPage({ ticker }: ReportPageProps) {
   const [assetData, setAssetData] = useState<ApiAssetItem | null>(null);
   const [financialAverages, setFinancialAverages] =
     useState<FinancialAverages | null>(null);
+  const [valuationMultiples, setValuationMultiples] =
+    useState<ValuationMetrics | null>(null);
+
+  // Un único estado de carga para toda la página
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,40 +44,49 @@ export default function ReportPage({ ticker }: ReportPageProps) {
     setLoading(true);
     setError(null);
     try {
-      // Hacemos las dos llamadas a la API en paralelo y sin caché
-      const [assetResponse, averagesResponse] = await Promise.all([
-        fetch(`/api/stocks?tickers=${ticker}&fullData=true`, {
-          cache: "no-store",
-        }),
-        fetch(`/api/financial-averages?ticker=${ticker}`, {
-          cache: "no-store",
-        }),
-      ]);
+      // Hacemos las TRES llamadas a la API en paralelo
+      const [assetResponse, averagesResponse, multiplesResponse] =
+        await Promise.all([
+          fetch(`/api/stocks?tickers=${ticker}&fullData=true`, {
+            cache: "no-store",
+          }),
+          fetch(`/api/financial-averages?ticker=${ticker}`, {
+            cache: "no-store",
+          }),
+          fetch(`/api/valuation-multiples?ticker=${ticker}`, {
+            cache: "no-store",
+          }),
+        ]);
 
+      // Verificamos todas las respuestas
       if (!assetResponse.ok)
         throw new Error(`Fallo al obtener los datos de ${ticker}.`);
       if (!averagesResponse.ok)
-        throw new Error(
-          `Fallo al obtener los promedios financieros de ${ticker}.`
-        );
+        throw new Error(`Fallo al obtener los promedios de ${ticker}.`);
+      if (!multiplesResponse.ok)
+        throw new Error(`Fallo al obtener los múltiplos de ${ticker}.`);
 
       const assetApiResponse = await assetResponse.json();
       const averagesApiResponse = await averagesResponse.json();
+      const multiplesApiResponse = await multiplesResponse.json();
 
+      // Validamos el contenido de las respuestas
       if (assetApiResponse.success === false)
         throw new Error(
-          assetApiResponse.message ||
-            "Error desconocido al obtener datos del activo."
+          assetApiResponse.message || "Error al obtener datos del activo."
         );
       if (averagesApiResponse.success === false)
         throw new Error(
-          averagesApiResponse.error ||
-            "Error desconocido al calcular los promedios."
+          averagesApiResponse.error || "Error al calcular los promedios."
         );
+      if (multiplesApiResponse.error)
+        throw new Error(multiplesApiResponse.error); // Asumiendo que la API de múltiplos devuelve un error así
 
+      // Seteamos todos los estados si los datos son correctos
       if (assetApiResponse.data && assetApiResponse.data.length > 0) {
         setAssetData(assetApiResponse.data[0]);
         setFinancialAverages(averagesApiResponse.averages);
+        setValuationMultiples(multiplesApiResponse);
       } else {
         setError(`No se encontraron datos para ${ticker}.`);
       }
@@ -96,11 +110,11 @@ export default function ReportPage({ ticker }: ReportPageProps) {
 
   if (loading) return <LoadingSpinner ticker={ticker} />;
   if (error) return <ErrorDisplay error={error} />;
-  if (!assetData || !financialAverages) {
+  if (!assetData || !financialAverages || !valuationMultiples) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <p className="text-xl font-semibold text-center text-gray-700">
-          No se pudieron cargar los datos del activo {ticker}.
+          No se pudieron cargar todos los datos necesarios para {ticker}.
         </p>
       </div>
     );
@@ -126,6 +140,8 @@ export default function ReportPage({ ticker }: ReportPageProps) {
           ticker={ticker}
           apiData={assetData.data}
           financialAverages={financialAverages}
+          valuationMultiples={valuationMultiples}
+          loadingMultiples={loading} // Pasamos el estado de carga general
         />
 
         <CompanyOverview assetData={assetData} />
@@ -136,7 +152,7 @@ export default function ReportPage({ ticker }: ReportPageProps) {
         <Profitability assetData={assetData} />
         <AnalystPerspectives assetData={assetData} />
         <Conclusion assetData={assetData} />
-        <GeminiAnalysis assetData={assetData}/>
+        <GeminiAnalysis assetData={assetData} />
 
         <footer className="text-center mt-12 pt-8 border-t border-gray-200">
           <h3 className="font-bold mb-2 text-[#0A2342]">Aviso Legal</h3>

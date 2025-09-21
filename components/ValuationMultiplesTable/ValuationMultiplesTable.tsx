@@ -1,11 +1,14 @@
 // components/ValuationMultiplesTable/ValuationMultiplesTable.tsx
 "use client";
-import React, { useState, useEffect, Dispatch, SetStateAction } from "react";
+import React, { Dispatch, SetStateAction } from "react";
 import Tooltip from "../Shared/Tooltips";
 
-// Interfaz para los datos que se obtienen de la API
-interface ValuationData {
-  ltm: number;
+// Interfaz para la estructura de datos que esperamos de la API
+interface ValuationMetricsData {
+  per: { ltm: number; ntm: number };
+  ev_ebitda: { ltm: number; ntm: string };
+  ev_ebit: { ltm: number; ntm: string };
+  ev_fcf: { ltm: number; ntm: string };
 }
 
 // Interfaz para el estado de los múltiplos objetivo
@@ -16,73 +19,31 @@ interface TargetsState {
   ev_fcf: number;
 }
 
-// Interfaz actualizada para las Props del componente
+// Interfaz para las Props del componente
 interface Props {
-  ticker: string;
+  metrics: ValuationMetricsData | null;
+  loading: boolean;
   currentPrice: number;
   targets: TargetsState;
   setTargets: Dispatch<SetStateAction<TargetsState>>;
 }
 
 const ValuationMultiplesTable: React.FC<Props> = ({
-  ticker,
+  metrics,
+  loading,
   currentPrice,
   targets,
   setTargets,
 }) => {
-  const [ltmMetrics, setLtmMetrics] = useState<{
-    [key: string]: ValuationData;
-  }>({});
-  const [loading, setLoading] = useState<boolean>(true);
-
   const metricDescriptions: { [key: string]: string } = {
-    PER: "Price-to-Earnings: Mide cuánto pagan los inversores por cada dólar de ganancias.",
-    EV_EBITDA:
+    per: "Price-to-Earnings: Mide cuánto pagan los inversores por cada dólar de ganancias.",
+    ev_ebitda:
       "Enterprise Value to EBITDA: Compara el valor total de la empresa con sus ganancias operativas.",
-    EV_EBIT:
+    ev_ebit:
       "Enterprise Value to EBIT: Similar a EV/EBITDA, pero considera la depreciación y amortización.",
-    EV_FCF:
+    ev_fcf:
       "Enterprise Value to Free Cash Flow: Mide el valor de la empresa en relación con el efectivo que genera.",
   };
-
-  useEffect(() => {
-    const fetchLtmData = async () => {
-      if (!ticker) return;
-      setLoading(true);
-      try {
-        const [keyStatsRes, incomeRes, fcfRes] = await Promise.all([
-          fetch(`/api/key-statistics?ticker=${ticker}`),
-          fetch(`/api/income-statement?ticker=${ticker}`),
-          fetch(`/api/free-cash-flow?ticker=${ticker}`),
-        ]);
-
-        const keyStatsData = await keyStatsRes.json();
-        const incomeData = await incomeRes.json();
-        const fcfData = await fcfRes.json();
-
-        const enterpriseValue =
-          (keyStatsData.metrics.enterpriseValue || [])[0] || 0;
-        const trailingPE = (keyStatsData.metrics.trailingPE || [])[0] || 0;
-        const ebitda = (incomeData.metrics.ebitda || [])[0] || 0;
-        const ebit = (incomeData.metrics.ebit || [])[0] || 0;
-        const freeCashFlow = (fcfData.metrics.freeCashFlow || [])[0] || 0;
-
-        setLtmMetrics({
-          per: { ltm: trailingPE },
-          ev_ebitda: { ltm: ebitda > 0 ? enterpriseValue / ebitda : 0 },
-          ev_ebit: { ltm: ebit > 0 ? enterpriseValue / ebit : 0 },
-          ev_fcf: {
-            ltm: freeCashFlow > 0 ? enterpriseValue / freeCashFlow : 0,
-          },
-        });
-      } catch (error) {
-        console.error("Failed to fetch LTM valuation data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLtmData();
-  }, [ticker]);
 
   const handleTargetChange = (key: keyof TargetsState, value: string) => {
     setTargets((prevTargets) => ({
@@ -121,41 +82,48 @@ const ValuationMultiplesTable: React.FC<Props> = ({
           <tr className="border-b border-gray-200 text-gray-500">
             <th className="py-2">Métrica</th>
             <th className="py-2 text-center">LTM</th>
-            <th className="py-2 text-center">Objetivo (2026e)</th>
+            <th className="py-2 text-center">NTM</th>
+            <th className="py-2 text-center">Objetivo</th>
           </tr>
         </thead>
         <tbody>
-          {Object.keys(targets).map((key) => (
-            <tr key={key} className="border-b border-gray-200">
-              <td className="py-2 font-semibold uppercase">
-                <Tooltip
-                  text={
-                    metricDescriptions[key.toUpperCase()] ||
-                    "Descripción no disponible."
-                  }
-                >
-                  {key.replace(/_/g, " / ")}
-                </Tooltip>
-              </td>
-              <td className="py-2 text-center">
-                {ltmMetrics[key]?.ltm?.toFixed(2) || "N/A"}
-              </td>
-              {/* *** CORRECCIÓN AQUÍ: Se añaden clases flex para centrar el input *** */}
-              <td className="py-2 text-red-600 font-bold flex justify-center items-center">
-                <input
-                  type="number"
-                  value={targets[key as keyof TargetsState]}
-                  onChange={(e) =>
-                    handleTargetChange(
-                      key as keyof TargetsState,
-                      e.target.value
-                    )
-                  }
-                  className="w-24 text-center bg-gray-100 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </td>
-            </tr>
-          ))}
+          {Object.keys(targets).map((key) => {
+            const metricKey = key as keyof TargetsState;
+            return (
+              <tr key={key} className="border-b border-gray-200">
+                <td className="py-2 font-semibold uppercase">
+                  <Tooltip
+                    text={
+                      metricDescriptions[metricKey] ||
+                      "Descripción no disponible."
+                    }
+                  >
+                    {key.replace(/_/g, " / ")}
+                  </Tooltip>
+                </td>
+                <td className="py-2 text-center">
+                  {typeof metrics?.[metricKey]?.ltm === "number"
+                    ? metrics[metricKey].ltm.toFixed(2)
+                    : "N/A"}
+                </td>
+                <td className="py-2 text-center">
+                  {typeof metrics?.[metricKey]?.ntm === "number"
+                    ? metrics[metricKey].ntm.toFixed(2)
+                    : metrics?.[metricKey]?.ntm || "N/A"}
+                </td>
+                <td className="py-2 text-red-600 font-bold flex justify-center items-center">
+                  <input
+                    type="number"
+                    value={targets[metricKey]}
+                    onChange={(e) =>
+                      handleTargetChange(metricKey, e.target.value)
+                    }
+                    className="w-24 text-center bg-gray-100 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
