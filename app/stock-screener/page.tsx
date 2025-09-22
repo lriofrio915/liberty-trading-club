@@ -1,72 +1,61 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { searchStocksAction } from "../actions/searchActions";
 
-// Interfaz para los resultados/sugerencias de la búsqueda
+// La interfaz para los resultados se alinea con lo que devuelve la Server Action
 interface SearchSuggestion {
   symbol: string;
-  shortname?: string;
-  longname?: string;
-  exchange?: string;
-  quoteType?: string;
+  name: string;
+  type: string;
+  region: string;
+  currency: string;
 }
 
 export default function StockScreener() {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isListVisible, setIsListVisible] = useState(false);
+
+  // useTransition para manejar el estado de carga sin bloquear la UI
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  const fetchSuggestions = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+  // Función que se ejecuta cuando el input cambia
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newQuery = e.target.value;
+    setQuery(newQuery);
+
+    if (!newQuery.trim() || newQuery.trim().length < 2) {
       setSuggestions([]);
+      setError(null);
+      setIsListVisible(false);
       return;
     }
 
-    setLoading(true);
-    setError(null);
     setIsListVisible(true);
 
-    try {
-      // Llamamos al nuevo endpoint de búsqueda
-      const response = await fetch(
-        `/api/search?query=${encodeURIComponent(searchQuery)}`
+    // startTransition envuelve la llamada a la Server Action
+    startTransition(async () => {
+      setError(null);
+      const { results, error: actionError } = await searchStocksAction(
+        newQuery
       );
-      if (!response.ok) throw new Error("Error en la red al buscar.");
-
-      const data = await response.json();
-      if (data.success && data.data) {
-        setSuggestions(
-          data.data.filter(
-            (item: SearchSuggestion) => item.quoteType === "EQUITY"
-          )
-        ); // Filtramos para mostrar solo acciones (Equity)
-      } else {
+      if (actionError) {
+        setError(actionError);
         setSuggestions([]);
+      } else {
+        setSuggestions(results.filter((item) => item.type === "EQUITY"));
       }
-    } catch (err) {
-      console.error("Error buscando sugerencias:", err);
-      setError("No se pudieron obtener sugerencias.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchSuggestions(query);
-    }, 300); // Debounce de 300ms para una respuesta más rápida
-
-    return () => clearTimeout(timer);
-  }, [query, fetchSuggestions]);
+    });
+  };
 
   const viewReport = (ticker: string) => {
-    setQuery(""); // Limpia la búsqueda
-    setSuggestions([]); // Oculta las sugerencias
+    setQuery("");
+    setSuggestions([]);
     setIsListVisible(false);
     router.push(`/stock-screener/${ticker.toLowerCase()}`);
   };
@@ -84,7 +73,6 @@ export default function StockScreener() {
           </p>
         </div>
 
-        {/* Barra de búsqueda con contenedor relativo para las sugerencias */}
         <div className="relative">
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="relative">
@@ -96,53 +84,54 @@ export default function StockScreener() {
                 className="block w-full pl-10 pr-3 py-4 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 placeholder="Buscar por ticker o nombre (ej: AAPL o Apple)"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => setIsListVisible(true)}
-                onBlur={() => setTimeout(() => setIsListVisible(false), 200)} // Pequeño delay para permitir el clic
+                onChange={handleInputChange} // La acción se dispara aquí directamente
+                onFocus={() => query.length > 1 && setIsListVisible(true)}
+                onBlur={() => setTimeout(() => setIsListVisible(false), 200)}
               />
             </div>
           </div>
 
-          {/* Lista de Sugerencias (Autocompletado) */}
           {isListVisible && query.length >= 2 && (
             <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg">
-              {loading && <div className="p-4 text-gray-500">Buscando...</div>}
+              {isPending && (
+                <div className="p-4 text-gray-500">Buscando...</div>
+              )}
               {error && <div className="p-4 text-red-500">{error}</div>}
-              {!loading && suggestions.length > 0 && (
+              {!isPending && suggestions.length > 0 && (
                 <ul className="max-h-60 overflow-y-auto">
                   {suggestions.map((item) => (
                     <li
                       key={item.symbol}
                       className="px-4 py-3 hover:bg-indigo-50 cursor-pointer"
-                      onMouseDown={() => viewReport(item.symbol)} // Usamos onMouseDown para que se dispare antes del onBlur del input
+                      onMouseDown={() => viewReport(item.symbol)}
                     >
                       <div className="flex justify-between items-center">
                         <div>
                           <p className="font-bold text-indigo-700">
                             {item.symbol}
                           </p>
-                          <p className="text-sm text-gray-600">
-                            {item.shortname || item.longname}
-                          </p>
+                          <p className="text-sm text-gray-600">{item.name}</p>
                         </div>
                         <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-                          {item.exchange}
+                          {item.region}
                         </span>
                       </div>
                     </li>
                   ))}
                 </ul>
               )}
-              {!loading && suggestions.length === 0 && query.length > 1 && (
-                <div className="p-4 text-gray-500">
-                  No se encontraron acciones.
-                </div>
-              )}
+              {!isPending &&
+                !error &&
+                suggestions.length === 0 &&
+                query.length > 1 && (
+                  <div className="p-4 text-gray-500">
+                    No se encontraron acciones.
+                  </div>
+                )}
             </div>
           )}
         </div>
 
-        {/* Información adicional cuando no hay búsqueda */}
         {!query && (
           <div className="mt-8 bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -150,10 +139,10 @@ export default function StockScreener() {
             </h3>
             <ul className="list-disc pl-5 space-y-2 text-gray-600">
               <li>Escribe al menos 2 caracteres para ver sugerencias.</li>
-              <li>Puedes buscar por el símbolo del ticker (ej: &quot;MSFT&quot;).</li>
+              <li>Puedes buscar por el símbolo del ticker (ej: "MSFT").</li>
               <li>
                 También puedes buscar por el nombre de la empresa (ej:
-                &quot;Microsoft&quot;).
+                "Microsoft").
               </li>
               <li>
                 Selecciona un resultado para ver el informe financiero completo.
