@@ -1,15 +1,19 @@
 // components/ValuationDashboard/ValuationDashboard.tsx
 "use client";
+
 import React, { useState } from "react";
 import ProjectionsTable from "../ProjectionsTable/ProjectionsTable";
 import ValuationMultiplesTable from "../ValuationMultiplesTable/ValuationMultiplesTable";
 import IntrinsicValueResults from "../IntrinsicValueResults/IntrinsicValueResults";
-import { QuoteSummaryResult } from "@/types/api";
+import { QuoteSummaryResult, YahooFinanceRawValue } from "@/types/api";
 import {
   ValuationResult,
   AssetData as ValuationDashboardData,
   ValuationMetrics,
 } from "@/types/valuation";
+
+// Definimos un tipo más específico para el valor de entrada
+type RawValueInput = number | YahooFinanceRawValue | undefined | null;
 
 interface FinancialAverages {
   salesGrowth: string;
@@ -18,9 +22,11 @@ interface FinancialAverages {
   sharesIncrease: string;
 }
 
-const getRawValue = (value: any): number => {
+// CORRECCIÓN 1: Se especifica un tipo más concreto en lugar de 'any'.
+const getRawValue = (value: RawValueInput): number => {
   if (typeof value === "object" && value !== null && "raw" in value) {
-    return value.raw;
+    // Verificamos que 'raw' sea un número antes de devolverlo
+    return typeof value.raw === "number" ? value.raw : 0;
   }
   return typeof value === "number" ? value : 0;
 };
@@ -64,6 +70,8 @@ const ValuationDashboard: React.FC<Props> = ({
     setIsLoading(true);
     setError(null);
     try {
+      // Esta API endpoint no existe en los archivos proporcionados, pero mantengo la lógica
+      // como la solicitaste. Asegúrate de que exista en tu proyecto.
       const response = await fetch("/api/intrinsic-value", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -77,6 +85,7 @@ const ValuationDashboard: React.FC<Props> = ({
       if (data.success && valuationMultiples) {
         const finalAvgPrice2026 =
           Object.values(data.results["2026e"] as ValuationResult).reduce(
+            // CORRECCIÓN: Se añaden tipos explícitos a los parámetros de reduce
             (sum: number, value: number) => sum + value,
             0
           ) / 4;
@@ -131,10 +140,16 @@ const ValuationDashboard: React.FC<Props> = ({
           },
         });
       } else {
-        setError(data.error || "Error desconocido");
+        setError(data.error || "Error desconocido al procesar la respuesta.");
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      // CORRECCIÓN 2: Se usa 'unknown' en lugar de 'any'
+      // Se realiza una comprobación de tipo para acceder a 'message' de forma segura
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Ocurrió un error inesperado durante el cálculo.");
+      }
     } finally {
       setIsLoading(false);
     }

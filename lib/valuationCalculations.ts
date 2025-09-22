@@ -1,9 +1,5 @@
-import {
-  QuoteSummaryResult,
-  YahooFinanceRawValue,
-  RawYahooFinanceIncomeStatementItem,
-} from "@/types/api";
-import { ValuationDataType, ValuationResult } from "@/types/valuation";
+import { QuoteSummaryResult, YahooFinanceRawValue } from "@/types/api";
+import { AssetData } from "@/types/valuation";
 
 // --- Funciones de Ayuda Internas (No exportadas) ---
 
@@ -19,8 +15,7 @@ const getRawValue = (
 const calculateAverageGrowth = (values: number[]): number => {
   if (values.length < 2) return 0;
   const growthRates: number[] = [];
-  // Se asume que el array está ordenado del más reciente al más antiguo
-  const reversedValues = [...values].reverse(); // Creamos una copia para no mutar el original
+  const reversedValues = [...values].reverse();
 
   for (let i = 1; i < reversedValues.length; i++) {
     const previous = reversedValues[i - 1];
@@ -33,13 +28,17 @@ const calculateAverageGrowth = (values: number[]): number => {
   return (growthRates.reduce((a, b) => a + b, 0) / growthRates.length) * 100;
 };
 
+// --- Tipo de Retorno Personalizado ---
+type ProcessedValuationData = AssetData & {
+  averages: { salesGrowth: string; ebitMargin: string };
+};
+
 // --- Función Principal de Procesamiento (Exportada) ---
 
 export const processValuationData = (
-  apiData: QuoteSummaryResult
-): ValuationDataType & {
-  averages: { salesGrowth: string; ebitMargin: string };
-} => {
+  apiData: QuoteSummaryResult,
+  ticker: string
+): ProcessedValuationData => {
   // --- 1. Extracción de Datos Base ---
   const currentPrice = getRawValue(apiData.price?.regularMarketPrice);
   const sharesOutstanding = getRawValue(
@@ -55,12 +54,11 @@ export const processValuationData = (
   // --- 2. Extracción de Historial y Datos LTM ---
   const incomeHistory =
     apiData.incomeStatementHistory?.incomeStatementHistory ?? [];
-  const latestIncomeStatement = incomeHistory[0]; // TTM
+  const latestIncomeStatement = incomeHistory[0];
 
   const trailingEps = getRawValue(apiData.defaultKeyStatistics?.trailingEps);
   const ltmEbitda = getRawValue(latestIncomeStatement?.ebitda);
   const ltmEbit = getRawValue(latestIncomeStatement?.ebit);
-
   const financialHistory = apiData.financialHistory ?? [];
   const ltmFcf =
     financialHistory.find((item) => item.year === "TTM")?.freeCashFlow ?? 0;
@@ -71,7 +69,7 @@ export const processValuationData = (
   const ltmEbitPerShare =
     sharesOutstanding > 0 ? ltmEbit / sharesOutstanding : 0;
 
-  // --- 3. Cálculo de Promedios para ProjectionsTable ---
+  // --- 3. Cálculo de Promedios ---
   const historicalRevenues = incomeHistory.map((s) =>
     getRawValue(s.totalRevenue)
   );
@@ -86,7 +84,7 @@ export const processValuationData = (
       : 0;
 
   // --- 4. Proyecciones y Múltiplos Objetivo ---
-  const growthRate = averageSalesGrowth / 100; // Usamos el crecimiento promedio calculado
+  const growthRate = averageSalesGrowth / 100;
   const targets = { per: 20, ev_fcf: 20, ev_ebitda: 16, ev_ebit: 16 };
 
   const projectedMetrics = {
@@ -105,7 +103,7 @@ export const processValuationData = (
   };
 
   // --- 5. Cálculo de Valores Intrínsecos ---
-  const valuationResults: ValuationDataType["valuationResults"] = {
+  const valuationResults: AssetData["valuationResults"] = {
     "2022e": { per_ex_cash: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 },
     "2023e": { per_ex_cash: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 },
     "2024e": { per_ex_cash: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 },
@@ -121,6 +119,13 @@ export const processValuationData = (
       ev_ebitda: projectedMetrics["2026e"].ebitdaPerShare * targets.ev_ebitda,
       ev_ebit: projectedMetrics["2026e"].ebitPerShare * targets.ev_ebit,
     },
+    // CORRECCIÓN: Añadimos la propiedad 'ntm' que faltaba
+    ntm: {
+      per_ex_cash: projectedMetrics["2025e"].eps * targets.per + cashPerShare,
+      ev_fcf: projectedMetrics["2025e"].fcfPerShare * targets.ev_fcf,
+      ev_ebitda: projectedMetrics["2025e"].ebitdaPerShare * targets.ev_ebitda,
+      ev_ebit: projectedMetrics["2025e"].ebitPerShare * targets.ev_ebit,
+    },
   };
 
   // --- 6. Cálculo Final de Margen de Seguridad y CAGR ---
@@ -135,6 +140,7 @@ export const processValuationData = (
 
   // --- 7. Ensamblaje del Objeto Final ---
   return {
+    ticker,
     currentPrice,
     multiples: {
       per: {
@@ -166,6 +172,12 @@ export const processValuationData = (
         ntm: "N/A",
         target: targets.ev_ebit,
       },
+    },
+    projections: {
+      salesGrowth: `${averageSalesGrowth.toFixed(2)}%`,
+      ebitMargin: `${averageEbitMargin.toFixed(2)}%`,
+      taxRate: "21%",
+      sharesIncrease: "0.05%",
     },
     valuationResults,
     marginOfSafety: marginOfSafety.toFixed(2),

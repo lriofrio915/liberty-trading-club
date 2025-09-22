@@ -3,7 +3,6 @@ import React from "react";
 import {
   AssetData,
   ValuationResult,
-  ValuationMetrics,
 } from "@/types/valuation";
 
 interface Props {
@@ -19,7 +18,6 @@ const IntrinsicValueResults: React.FC<Props> = ({
   marginOfSafety,
   cagrResults,
   currentPrice,
-  multiples,
 }) => {
   const metrics = Object.keys(results["2022e"]) as Array<keyof ValuationResult>;
   const finalAvgPrice =

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ApiAssetItem } from "@/types/api";
 import DataListItem from "../Shared/DataListItem";
-import { translateText } from "@/app/actions/translateActions";
+import { translateText } from "../../app/actions/translateActions";
 import NetIncomeChart from "../NetIncomeChart/NetIncomeChart";
 import TotalRevenueChart from "../TotalRevenueChart/TotalRevenueChart";
 
@@ -60,7 +60,9 @@ export default function CompanyOverview({ assetData }: CompanyOverviewProps) {
         1. Visión General de la Empresa
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+      {/* --- INICIO DE LA ESTRUCTURA ACTUALIZADA --- */}
+      <div className="flex flex-col gap-8">
+        {/* Fila 1: Descripción de la empresa (ocupa todo el ancho) */}
         <div>
           <h3 className="text-2xl font-semibold text-[#0A2342] mb-4">
             Acerca de {companyName}
@@ -116,13 +118,11 @@ export default function CompanyOverview({ assetData }: CompanyOverviewProps) {
                 </a>
               </li>
             )}
-            {/* Reintegración de Empleados */}
             <DataListItem
               label="Empleados a tiempo completo"
               value={assetProfile?.fullTimeEmployees}
               format="number"
             />
-            {/* Reintegración de Ubicación */}
             {(assetProfile?.address1 ||
               assetProfile?.city ||
               assetProfile?.country) && (
@@ -138,12 +138,17 @@ export default function CompanyOverview({ assetData }: CompanyOverviewProps) {
           </ul>
         </div>
 
-        {/* Sección de logo de Emporium */}
-        <div>
-          <TotalRevenueChart assetData={assetData} />
-          <NetIncomeChart assetData={assetData} />
+        {/* Fila 2: Gráficos en dos columnas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <TotalRevenueChart assetData={assetData} />
+          </div>
+          <div>
+            <NetIncomeChart assetData={assetData} />
+          </div>
         </div>
       </div>
+      {/* --- FIN DE LA ESTRUCTURA ACTUALIZADA --- */}
     </section>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { MagnifyingGlassIcon, ChartBarIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 // Interfaz para los resultados/sugerencias de la búsqueda
 interface SearchSuggestion {
@@ -150,10 +150,10 @@ export default function StockScreener() {
             </h3>
             <ul className="list-disc pl-5 space-y-2 text-gray-600">
               <li>Escribe al menos 2 caracteres para ver sugerencias.</li>
-              <li>Puedes buscar por el símbolo del ticker (ej: "MSFT").</li>
+              <li>Puedes buscar por el símbolo del ticker (ej: &quot;MSFT&quot;).</li>
               <li>
                 También puedes buscar por el nombre de la empresa (ej:
-                "Microsoft").
+                &quot;Microsoft&quot;).
               </li>
               <li>
                 Selecciona un resultado para ver el informe financiero completo.

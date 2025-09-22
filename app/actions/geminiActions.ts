@@ -28,18 +28,28 @@ export async function generateValueInvestingAnalysis(
     2
   );
 
-  // --- ✨ PROMPT ACTUALIZADO CON LA SECCIÓN DE PERFIL DE RIESGO ---
+  // --- ✨ 1. OBTENER LA FECHA ACTUAL ---
+  // Creamos la fecha actual y la formateamos en español para Ecuador.
+  const currentDate = new Date().toLocaleDateString("es-EC", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  // --- ✨ 2. INCLUIR LA FECHA EN EL PROMPT ---
   const prompt = `
     Eres un analista financiero de élite, especializado en "value investing" y gestión de riesgos, entrenado con las filosofías de Warren Buffett, Charlie Munger y Peter Lynch. Tu tarea es analizar los datos de la empresa con ticker "${assetData.ticker}" y redactar un informe fundamental conciso y profundo para un gestor de portafolios.
 
-    El informe debe tener dos secciones claras:
+    El informe debe tener dos secciones claras y usar la fecha de hoy.
+
+    **Fecha del Informe:** ${currentDate}
 
     **SECCIÓN 1: ANÁLISIS DE INVERSIÓN DE VALOR**
     Adopta el siguiente enfoque, combinando las fortalezas de los tres maestros:
 
     1.  **Comprensión del Negocio (Buffett/Munger/Lynch):**
         * Basado en 'sector', 'industria' y 'longBusinessSummary', describe en una o dos frases a qué se dedica la empresa. ¿Es un negocio simple y comprensible?
-        * Identifica su "foso económico" (Economic Moat). ¿Tiene ventajas competitivas duraderas?
+        * Identifica su "foso económico" (Economic Moat). ¿Tiene ventajas competitivas duraderas?. Haz una comparativa frende a sus principales competidores. 
 
     2.  **Salud Financiera y Gestión (Buffett/Munger):**
         * Analiza la deuda ('totalDebt', 'debtToEquity'). ¿Es manejable? Los grandes inversores prefieren empresas con poca deuda.
