@@ -107,16 +107,60 @@ const IntrinsicValueResults: React.FC<Props> = ({
         </table>
       </div>
 
+      {/* --- SECCIÓN ACTUALIZADA CON FÓRMULAS --- */}
       <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
         <h4 className="font-semibold text-blue-800 mb-2">
           ¿Cómo se calcula el valor intrínseco?
         </h4>
-        <p className="text-sm text-blue-700">
-          Utilizamos las proyecciones financieras que ingresaste para los
-          próximos años, aplicando los múltiplos de valoración objetivo. Cada
-          métrica combina tus estimaciones de crecimiento con múltiplos de
-          referencia para determinar el precio teórico justo de la acción.
-        </p>
+        <div className="text-sm text-blue-700 space-y-3">
+          <p>
+            Cada métrica utiliza las proyecciones financieras y los múltiplos
+            objetivo para estimar el precio teórico de la acción:
+          </p>
+          <ul className="space-y-4 pl-4 font-mono">
+            <li>
+              <strong className="font-sans font-semibold text-blue-800">
+                Precio/Beneficios (P/E):
+              </strong>
+              <p className="font-sans text-xs italic text-blue-600">
+                Estima el precio basado en las ganancias por acción (EPS).
+              </p>
+              <div className="text-center bg-blue-100 p-2 rounded mt-1">
+                <p>Precio Objetivo = EPS Proyectado × P/E Objetivo</p>
+              </div>
+            </li>
+            <li>
+              <strong className="font-sans font-semibold text-blue-800">
+                Empresa/FCF (EV/FCF):
+              </strong>
+              <p className="font-sans text-xs italic text-blue-600">
+                Calcula el valor basado en el flujo de caja libre, ajustado por
+                deuda y caja.
+              </p>
+              <div className="text-center bg-blue-100 p-2 rounded mt-1">
+                <p>
+                  Precio Objetivo = [(FCF Proyectado × EV/FCF Objetivo) - Deuda
+                  Neta] / N° de Acciones
+                </p>
+              </div>
+            </li>
+            <li>
+              <strong className="font-sans font-semibold text-blue-800">
+                Empresa/EBITDA (EV/EBITDA):
+              </strong>
+              <p className="font-sans text-xs italic text-blue-600">
+                Usa las ganancias antes de intereses, impuestos, depreciación y
+                amortización.
+              </p>
+              <div className="text-center bg-blue-100 p-2 rounded mt-1">
+                <p>
+                  Precio Objetivo = [(EBITDA Proyectado × EV/EBITDA Objetivo) -
+                  Deuda Neta] / N° de Acciones
+                </p>
+              </div>
+            </li>
+          </ul>
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-4">

@@ -1,10 +1,7 @@
 // app/actions/valuationActions.ts
 "use server";
 
-import {
-  ValuationMetrics,
-  ValuationResults,
-} from "@/types/valuation";
+import { ValuationMetrics, ValuationResults } from "@/types/valuation";
 
 interface KeyStatisticsData {
   metrics: {
@@ -158,10 +155,9 @@ export async function getValuationMultiples(
     const forwardPE = (keyStatisticsData.metrics["forwardPE"] || [])[0] || 0;
 
     // Corregir cálculos - verificar que los denominadores no sean cero
-    const evEbitdaLtm =
-      ltmEBITDA !== 0 ? enterpriseValue / (ltmEBITDA) : 0;
-    const evEbitLtm = ltmEBIT !== 0 ? enterpriseValue / (ltmEBIT) : 0;
-    const evFcfLtm = ltmFCF !== 0 ? enterpriseValue / (ltmFCF) : 0;
+    const evEbitdaLtm = ltmEBITDA !== 0 ? enterpriseValue / ltmEBITDA : 0;
+    const evEbitLtm = ltmEBIT !== 0 ? enterpriseValue / ltmEBIT : 0;
+    const evFcfLtm = ltmFCF !== 0 ? enterpriseValue / ltmFCF : 0;
 
     const calculatedMetrics: ValuationMetrics = {
       per: { ltm: trailingPE, ntm: forwardPE, target: 20 },
@@ -186,7 +182,7 @@ export async function getValuationMultiples(
 
 // --- FUNCIONES DE CÁLCULO DE PROMEDIOS ---
 const calculateAverageSalesGrowth = (revenues: number[]): string => {
-  const fiscalYearRevenues = revenues.slice(1); // Ignorar TTM (primer elemento)
+  const fiscalYearRevenues = revenues.slice(1);
 
   if (fiscalYearRevenues.length < 2) {
     return "N/A";
@@ -325,7 +321,6 @@ export async function getFinancialAverages(
 
     const incomeData: IncomeStatementData = await response.json();
 
-    // Calcular promedios usando las funciones auxiliares
     const salesGrowth = calculateAverageSalesGrowth(
       incomeData.metrics.totalRevenue
     );
@@ -372,7 +367,6 @@ export async function calculateIntrinsicValue(
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-    // 1. Obtener todos los datos base LTM y NTM necesarios en paralelo
     const [keyStatsRes, incomeStatementRes, freeCashFlowRes, balanceSheetRes] =
       await Promise.all([
         fetch(`${baseUrl}/api/key-statistics?ticker=${params.ticker}`),
@@ -392,13 +386,11 @@ export async function calculateIntrinsicValue(
       );
     }
 
-    const keyStatsData: KeyStatisticsData = await keyStatsRes.json();
     const incomeStatementData: IncomeStatementData =
       await incomeStatementRes.json();
     const freeCashFlowData: FreeCashFlowData = await freeCashFlowRes.json();
     const balanceSheetData: BalanceSheetData = await balanceSheetRes.json();
 
-    // 2. Extraer y calcular valores LTM (base para 2025e)
     const ltmNetIncome = (incomeStatementData.metrics.netIncome || [])[0] || 0;
     const ltmRevenue = (incomeStatementData.metrics.totalRevenue || [])[0] || 0;
     const ltmEBITDA = (incomeStatementData.metrics.ebitda || [])[0] || 0;
@@ -409,10 +401,6 @@ export async function calculateIntrinsicValue(
     const ltmNetDebt = (balanceSheetData.metrics.netDebt || [])[0] || 0;
     const ltmEPS = sharesOutstanding > 0 ? ltmNetIncome / sharesOutstanding : 0;
 
-    // Extraer y calcular valores NTM
-    const forwardEPS = (keyStatsData.metrics.forwardPE || [])[0] || 0;
-
-    // 3. Proyectar métricas para 2026e usando las estimaciones del usuario
     const projectedRevenue2026 =
       ltmRevenue * (1 + params.estimates.salesGrowth / 100);
     const projectedEBIT2026 =
@@ -431,15 +419,6 @@ export async function calculateIntrinsicValue(
           projectedShares2026
         : 0;
 
-    // Proyectar métricas para NTM
-    const projectedRevenueNTM =
-      ltmRevenue * (1 + params.estimates.salesGrowth / 100 / 2); // Crecimiento a 6 meses
-    const projectedEBITNTM =
-      projectedRevenueNTM * (params.estimates.ebitMargin / 100);
-    const projectedEBITDANTM = projectedEBITNTM * ebitdaToEbitRatio;
-    const projectedFCFNTM = projectedEBITNTM * fcfToEbitRatio;
-
-    // 4. Construir la respuesta final
     const zeroYear: PriceCalculation = {
       per: 0,
       ev_fcf: 0,
@@ -483,33 +462,14 @@ export async function calculateIntrinsicValue(
           : 0,
     };
 
-    const ntmPrice: PriceCalculation = {
-      per: params.targets.per * forwardEPS,
-      ev_ebitda:
-        sharesOutstanding > 0
-          ? (params.targets.ev_ebitda * projectedEBITDANTM - ltmNetDebt) /
-            sharesOutstanding
-          : 0,
-      ev_ebit:
-        sharesOutstanding > 0
-          ? (params.targets.ev_ebit * projectedEBITNTM - ltmNetDebt) /
-            sharesOutstanding
-          : 0,
-      ev_fcf:
-        sharesOutstanding > 0
-          ? (params.targets.ev_fcf * projectedFCFNTM - ltmNetDebt) /
-            sharesOutstanding
-          : 0,
-    };
-
-    // Convertir a ValuationResults
+    // Construir el objeto de resultados SIN la columna "ntm"
     const results: ValuationResults = {
       "2022e": zeroYear,
       "2023e": zeroYear,
       "2024e": zeroYear,
       "2025e": price2025e,
       "2026e": price2026e,
-      ntm: ntmPrice,
+      // La propiedad "ntm" ha sido eliminada.
     };
 
     return { success: true, results };
