@@ -104,24 +104,24 @@ export const processValuationData = (
 
   // --- 5. Cálculo de Valores Intrínsecos ---
   const valuationResults: AssetData["valuationResults"] = {
-    "2022e": { per_ex_cash: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 },
-    "2023e": { per_ex_cash: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 },
-    "2024e": { per_ex_cash: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 },
+    "2022e": { per: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 },
+    "2023e": { per: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 },
+    "2024e": { per: 0, ev_fcf: 0, ev_ebitda: 0, ev_ebit: 0 },
     "2025e": {
-      per_ex_cash: projectedMetrics["2025e"].eps * targets.per + cashPerShare,
+      per: projectedMetrics["2025e"].eps * targets.per + cashPerShare,
       ev_fcf: projectedMetrics["2025e"].fcfPerShare * targets.ev_fcf,
       ev_ebitda: projectedMetrics["2025e"].ebitdaPerShare * targets.ev_ebitda,
       ev_ebit: projectedMetrics["2025e"].ebitPerShare * targets.ev_ebit,
     },
     "2026e": {
-      per_ex_cash: projectedMetrics["2026e"].eps * targets.per + cashPerShare,
+      per: projectedMetrics["2026e"].eps * targets.per + cashPerShare,
       ev_fcf: projectedMetrics["2026e"].fcfPerShare * targets.ev_fcf,
       ev_ebitda: projectedMetrics["2026e"].ebitdaPerShare * targets.ev_ebitda,
       ev_ebit: projectedMetrics["2026e"].ebitPerShare * targets.ev_ebit,
     },
     // CORRECCIÓN: Añadimos la propiedad 'ntm' que faltaba
     ntm: {
-      per_ex_cash: projectedMetrics["2025e"].eps * targets.per + cashPerShare,
+      per: projectedMetrics["2025e"].eps * targets.per + cashPerShare,
       ev_fcf: projectedMetrics["2025e"].fcfPerShare * targets.ev_fcf,
       ev_ebitda: projectedMetrics["2025e"].ebitdaPerShare * targets.ev_ebitda,
       ev_ebit: projectedMetrics["2025e"].ebitPerShare * targets.ev_ebit,

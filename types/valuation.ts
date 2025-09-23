@@ -3,14 +3,14 @@
 export interface MultiplesData {
   ltm: number | string;
   ntm: number | string;
-  target: number | string;
+  target: number;
 }
 
 export interface ValuationMetrics {
-  per: { ltm: number; ntm: number };
-  ev_ebitda: { ltm: number; ntm: string };
-  ev_ebit: { ltm: number; ntm: string };
-  ev_fcf: { ltm: number; ntm: string };
+  per: MultiplesData;
+  ev_fcf: MultiplesData;
+  ev_ebitda: MultiplesData;
+  ev_ebit: MultiplesData;
 }
 
 export interface ProjectionsData {
@@ -21,32 +21,23 @@ export interface ProjectionsData {
 }
 
 export interface ValuationResult {
-  per_ex_cash: number;
+  per: number;
   ev_fcf: number;
   ev_ebitda: number;
   ev_ebit: number;
-  [key: string]: number; // Firma de índice para acceso dinámico
 }
 
-// CORRECCIÓN: Renombrado de 'ValuationDashboardData' a 'AssetData' para consistencia
+// CORREGIDO: Se exporta esta interfaz para que pueda ser utilizada en otros archivos.
+export interface ValuationResults {
+  [year: string]: ValuationResult;
+}
+
 export interface AssetData {
   ticker: string;
   currentPrice: number;
-  multiples: {
-    per: MultiplesData;
-    ev_fcf: MultiplesData;
-    ev_ebitda: MultiplesData;
-    ev_ebit: MultiplesData;
-  };
+  multiples: ValuationMetrics;
   projections: ProjectionsData;
-  valuationResults: {
-    "2022e": ValuationResult;
-    "2023e": ValuationResult;
-    "2024e": ValuationResult;
-    "2025e": ValuationResult;
-    "2026e": ValuationResult;
-    ntm: ValuationResult;
-  };
+  valuationResults: ValuationResults;
   marginOfSafety: number | string;
   cagrResults: {
     per: number;
