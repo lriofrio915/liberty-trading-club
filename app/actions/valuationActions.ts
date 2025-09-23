@@ -5,6 +5,7 @@ import {
   ValuationMetrics,
   ValuationResults,
 } from "@/types/valuation";
+
 interface KeyStatisticsData {
   metrics: {
     trailingPE?: number[];
@@ -158,9 +159,9 @@ export async function getValuationMultiples(
 
     // Corregir cálculos - verificar que los denominadores no sean cero
     const evEbitdaLtm =
-      ltmEBITDA !== 0 ? enterpriseValue / (ltmEBITDA * 1000) : 0;
-    const evEbitLtm = ltmEBIT !== 0 ? enterpriseValue / (ltmEBIT * 1000) : 0;
-    const evFcfLtm = ltmFCF !== 0 ? enterpriseValue / (ltmFCF * 1000) : 0;
+      ltmEBITDA !== 0 ? enterpriseValue / (ltmEBITDA) : 0;
+    const evEbitLtm = ltmEBIT !== 0 ? enterpriseValue / (ltmEBIT) : 0;
+    const evFcfLtm = ltmFCF !== 0 ? enterpriseValue / (ltmFCF) : 0;
 
     const calculatedMetrics: ValuationMetrics = {
       per: { ltm: trailingPE, ntm: forwardPE, target: 20 },

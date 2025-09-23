@@ -1,16 +1,54 @@
 // components/ProjectionsTable/ProjectionsTable.tsx
 "use client";
 
-import React, { Dispatch, SetStateAction } from "react";
+import React, { Dispatch, SetStateAction, useMemo } from "react";
 import Tooltip from "../Shared/Tooltips";
+import { QuoteSummaryResult } from "@/types/api";
 
-// Interfaz para los datos que se obtienen de la API
-interface FinancialAverages {
-  salesGrowth: number | string;
-  ebitMargin: number | string;
-  taxRate: number | string;
-  sharesIncrease: number | string;
-}
+// --- INICIO: Lógica de Cálculo Movida al Frontend ---
+
+const getRawValue = (value: any): number => {
+  if (typeof value === "object" && value !== null && "raw" in value) {
+    return typeof value.raw === "number" ? value.raw : 0;
+  }
+  return typeof value === "number" ? value : 0;
+};
+
+const calculateAverageSalesGrowth = (history: any[]): string => {
+  if (!history || history.length < 2) return "N/A";
+  const growthRates: number[] = [];
+  for (let i = 0; i < history.length - 1; i++) {
+    const currentRevenue = getRawValue(history[i].totalRevenue);
+    const previousRevenue = getRawValue(history[i + 1].totalRevenue);
+    if (previousRevenue && previousRevenue !== 0) {
+      growthRates.push(
+        ((currentRevenue - previousRevenue) / previousRevenue) * 100
+      );
+    }
+  }
+  if (growthRates.length === 0) return "N/A";
+  const averageGrowth =
+    growthRates.reduce((sum, rate) => sum + rate, 0) / growthRates.length;
+  return averageGrowth.toFixed(2);
+};
+
+const calculateAverageEbitMargin = (history: any[]): string => {
+  if (!history || history.length === 0) return "N/A";
+  const margins: number[] = [];
+  for (const item of history) {
+    const ebit = getRawValue(item.ebit);
+    const revenue = getRawValue(item.totalRevenue);
+    if (revenue !== 0) {
+      margins.push((ebit / revenue) * 100);
+    }
+  }
+  if (margins.length === 0) return "N/A";
+  const averageMargin =
+    margins.reduce((sum, margin) => sum + margin, 0) / margins.length;
+  return averageMargin.toFixed(2);
+};
+
+// --- FIN: Lógica de Cálculo ---
 
 interface EstimatesState {
   salesGrowth: number;
@@ -19,14 +57,23 @@ interface EstimatesState {
   sharesIncrease: number;
 }
 
-// Interfaz actualizada para las Props del componente
+// Interfaz para los promedios calculados
+interface FinancialAverages {
+  salesGrowth: string;
+  ebitMargin: string;
+  taxRate: string;
+  sharesIncrease: string;
+}
+
 interface Props {
+  apiData: QuoteSummaryResult; // Recibimos el objeto completo de datos
   estimates: EstimatesState;
   setEstimates: Dispatch<SetStateAction<EstimatesState>>;
-  financialAverages: FinancialAverages;
+  financialAverages: FinancialAverages | null; // Aceptamos que pueda ser null
 }
 
 const ProjectionsTable: React.FC<Props> = ({
+  apiData,
   estimates,
   setEstimates,
   financialAverages,
@@ -51,45 +98,49 @@ const ProjectionsTable: React.FC<Props> = ({
   };
 
   const projectionsToDisplay = [
-    { key: "salesGrowth", name: "Sales Growth" },
-    { key: "ebitMargin", name: "EBIT Margin" },
-    { key: "taxRate", name: "Tax Rate" },
-    { key: "sharesIncrease", name: "Shares Increase" },
+    { key: "salesGrowth", name: "Crecimiento de Ventas" },
+    { key: "ebitMargin", name: "Margen EBIT" },
+    { key: "taxRate", name: "Tasa de Impuestos" },
+    { key: "sharesIncrease", name: "Aumento de Acciones" },
   ];
+
+  // Hacemos el encabezado de la tabla dinámico
+  const currentYear = new Date().getFullYear();
 
   return (
     <div className="bg-white text-gray-800 p-4 rounded-lg shadow-lg border border-gray-200">
-      <h3 className="text-xl font-semibold mb-4">Proyección a futuro</h3>
+      <h3 className="text-xl font-semibold mb-4">Proyecciones Futuras</h3>
       <table className="w-full text-left">
         <thead>
-          <tr className="border-b border-gray-200 text-gray-500">
+          <tr className="border-b border-gray-200 text-gray-500 text-sm">
             <th className="py-2">Métrica</th>
             <th className="py-2 text-center">
-              <div className="flex flex-col items-center">
-                <span>Promedio</span>
-                <span className="text-sm font-normal">2022 - 2025</span>
-              </div>
+              <span>Promedio Histórico</span>
             </th>
             <th className="py-2 text-center">
-              <div className="flex flex-col items-center">
-                <span>Estimaciones</span>
-                <span className="text-sm font-normal">2026e</span>
-              </div>
+              <span>Estimación {currentYear + 1}e</span>
             </th>
           </tr>
         </thead>
         <tbody>
           {projectionsToDisplay.map((projection) => (
-            <tr key={projection.key} className="border-b border-gray-200">
+            <tr
+              key={projection.key}
+              className="border-b border-gray-200 last:border-b-0"
+            >
               <td className="py-2">
                 <Tooltip text={metricDescriptions[projection.key] || ""}>
                   {projection.name}
                 </Tooltip>
               </td>
               <td className="py-2 text-center font-semibold">
-                {`${
-                  financialAverages[projection.key as keyof FinancialAverages]
-                }%`}
+                {financialAverages
+                  ? `${
+                      financialAverages[
+                        projection.key as keyof FinancialAverages
+                      ]
+                    }%`
+                  : "Cargando..."}
               </td>
               <td className="py-2 text-center text-red-600 font-bold">
                 <div className="flex justify-center items-center">
@@ -98,10 +149,10 @@ const ProjectionsTable: React.FC<Props> = ({
                     name={projection.key}
                     value={estimates[projection.key as keyof EstimatesState]}
                     onChange={handleInputChange}
-                    className="w-20 text-center bg-transparent border-none focus:outline-none focus:ring-0"
-                    step="0.1"
+                    className="w-24 text-center text-red-600 font-bold bg-gray-100 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    step="0.01"
                   />
-                  %
+                  <span className="ml-1">%</span>
                 </div>
               </td>
             </tr>

@@ -27,11 +27,12 @@ export interface ValuationResult {
   ev_ebit: number;
 }
 
-// CORREGIDO: Se exporta esta interfaz para que pueda ser utilizada en otros archivos.
+// CORREGIDO: Se exporta y se define con un índice de firma para aceptar años dinámicos
 export interface ValuationResults {
   [year: string]: ValuationResult;
 }
 
+// Interfaz consolidada para los datos de valoración
 export interface AssetData {
   ticker: string;
   currentPrice: number;

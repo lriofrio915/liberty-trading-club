@@ -1,19 +1,31 @@
 // components/ValuationDashboard/ValuationDashboard.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { Dispatch, SetStateAction } from "react";
 import ProjectionsTable from "../ProjectionsTable/ProjectionsTable";
 import ValuationMultiplesTable from "../ValuationMultiplesTable/ValuationMultiplesTable";
 import IntrinsicValueResults from "../IntrinsicValueResults/IntrinsicValueResults";
-import { QuoteSummaryResult, YahooFinanceRawValue } from "@/types/api";
+import { QuoteSummaryResult } from "@/types/api";
 import {
-  ValuationResult,
-  AssetData as ValuationDashboardData,
   ValuationMetrics,
+  ValuationResult,
+  ValuationResults,
 } from "@/types/valuation";
 
-// Definimos un tipo más específico para el valor de entrada
-type RawValueInput = number | YahooFinanceRawValue | undefined | null;
+// Definición de tipos para los estados que se manejarán
+interface EstimatesState {
+  salesGrowth: number;
+  ebitMargin: number;
+  taxRate: number;
+  sharesIncrease: number;
+}
+
+interface TargetsState {
+  per: number;
+  ev_ebitda: number;
+  ev_ebit: number;
+  ev_fcf: number;
+}
 
 interface FinancialAverages {
   salesGrowth: string;
@@ -22,181 +34,92 @@ interface FinancialAverages {
   sharesIncrease: string;
 }
 
-// CORRECCIÓN 1: Se especifica un tipo más concreto en lugar de 'any'.
-const getRawValue = (value: RawValueInput): number => {
+// --- CORRECCIÓN: Interfaz de Props actualizada para aceptar todo lo que envía ReportPage ---
+interface Props {
+  ticker: string;
+  apiData: QuoteSummaryResult;
+  valuationMultiples: ValuationMetrics | null;
+  loadingMultiples: boolean;
+  financialAverages: FinancialAverages | null;
+  estimates: EstimatesState;
+  setEstimates: Dispatch<SetStateAction<EstimatesState>>;
+  targets: TargetsState;
+  setTargets: Dispatch<SetStateAction<TargetsState>>;
+  handleCalculation: () => void;
+  isCalculating: boolean;
+  valuationResults: ValuationResults | null;
+  marginOfSafety: string | null;
+  cagr: number | null;
+}
+
+const getRawValue = (value: any): number => {
   if (typeof value === "object" && value !== null && "raw" in value) {
-    // Verificamos que 'raw' sea un número antes de devolverlo
     return typeof value.raw === "number" ? value.raw : 0;
   }
   return typeof value === "number" ? value : 0;
 };
 
-// Interfaz para las Props del componente
-interface Props {
-  ticker: string;
-  apiData: QuoteSummaryResult;
-  financialAverages: FinancialAverages;
-  valuationMultiples: ValuationMetrics | null;
-  loadingMultiples: boolean;
-}
-
 const ValuationDashboard: React.FC<Props> = ({
   ticker,
   apiData,
-  financialAverages,
   valuationMultiples,
   loadingMultiples,
+  financialAverages,
+  estimates,
+  setEstimates,
+  targets,
+  setTargets,
+  handleCalculation,
+  isCalculating,
+  valuationResults,
+  marginOfSafety,
+  cagr,
 }) => {
-  const [valuationData, setValuationData] =
-    useState<ValuationDashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const currentPrice = getRawValue(apiData.price?.regularMarketPrice);
 
-  const [targets, setTargets] = useState({
-    per: 20,
-    ev_ebitda: 16,
-    ev_ebit: 16,
-    ev_fcf: 20,
-  });
+  return (
+    <div className="bg-white text-gray-800 p-6 rounded-lg shadow-lg mt-8 border border-gray-200">
+      <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+        Análisis de Valoración: {ticker}
+      </h2>
+      <div className="grid md:grid-cols-2 gap-8 mb-6">
+        <ProjectionsTable
+          apiData={apiData}
+          estimates={estimates}
+          setEstimates={setEstimates}
+          financialAverages={financialAverages}
+        />
+        <ValuationMultiplesTable
+          currentPrice={currentPrice}
+          metrics={valuationMultiples}
+          loading={loadingMultiples}
+          targets={targets}
+          setTargets={setTargets}
+        />
+      </div>
+      <div className="text-center my-6">
+        <button
+          onClick={handleCalculation}
+          disabled={isCalculating}
+          className="bg-blue-600 text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-blue-700 transition-colors duration-300 shadow-lg disabled:bg-gray-400 cursor-pointer disabled:cursor-not-allowed"
+        >
+          {isCalculating ? "Calculando..." : "Calcular Valor Intrínseco"}
+        </button>
+      </div>
 
-  const [estimates, setEstimates] = useState({
-    salesGrowth: 12,
-    ebitMargin: 28,
-    taxRate: 21,
-    sharesIncrease: 0.05,
-  });
-
-  const handleCalculation = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Esta API endpoint no existe en los archivos proporcionados, pero mantengo la lógica
-      // como la solicitaste. Asegúrate de que exista en tu proyecto.
-      const response = await fetch("/api/intrinsic-value", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticker, targets, estimates }),
-      });
-
-      if (!response.ok)
-        throw new Error("Error al calcular el valor intrínseco");
-      const data = await response.json();
-
-      if (data.success && valuationMultiples) {
-        const finalAvgPrice2026 =
-          Object.values(data.results["2026e"] as ValuationResult).reduce(
-            // CORRECCIÓN: Se añaden tipos explícitos a los parámetros de reduce
-            (sum: number, value: number) => sum + value,
-            0
-          ) / 4;
-        const currentPriceVal = getRawValue(apiData.price?.regularMarketPrice);
-        const marginOfSafety =
-          currentPriceVal > 0
-            ? ((finalAvgPrice2026 - currentPriceVal) / currentPriceVal) * 100
-            : 0;
-        const cagr =
-          currentPriceVal > 0
-            ? (Math.pow(finalAvgPrice2026 / currentPriceVal, 1 / 5) - 1) * 100
-            : 0;
-
-        setValuationData({
-          valuationResults: data.results,
-          marginOfSafety: marginOfSafety.toFixed(2),
-          cagrResults: {
+      {valuationResults && marginOfSafety !== null && cagr !== null && (
+        <IntrinsicValueResults
+          results={valuationResults}
+          marginOfSafety={marginOfSafety}
+          cagrResults={{
             per: cagr,
             ev_fcf: cagr,
             ev_ebitda: cagr,
             ev_ebit: cagr,
-          },
-          ticker: ticker,
-          currentPrice: currentPriceVal,
-          multiples: {
-            per: {
-              ltm: valuationMultiples.per.ltm,
-              ntm: valuationMultiples.per.ntm,
-              target: targets.per,
-            },
-            ev_fcf: {
-              ltm: valuationMultiples.ev_fcf.ltm,
-              ntm: valuationMultiples.ev_fcf.ntm,
-              target: targets.ev_fcf,
-            },
-            ev_ebitda: {
-              ltm: valuationMultiples.ev_ebitda.ltm,
-              ntm: valuationMultiples.ev_ebitda.ntm,
-              target: targets.ev_ebitda,
-            },
-            ev_ebit: {
-              ltm: valuationMultiples.ev_ebit.ltm,
-              ntm: valuationMultiples.ev_ebit.ntm,
-              target: targets.ev_ebit,
-            },
-          },
-          projections: {
-            salesGrowth: `${estimates.salesGrowth}%`,
-            ebitMargin: `${estimates.ebitMargin}%`,
-            taxRate: `${estimates.taxRate}%`,
-            sharesIncrease: `${estimates.sharesIncrease}%`,
-          },
-        });
-      } else {
-        setError(data.error || "Error desconocido al procesar la respuesta.");
-      }
-    } catch (err: unknown) {
-      // CORRECCIÓN 2: Se usa 'unknown' en lugar de 'any'
-      // Se realiza una comprobación de tipo para acceder a 'message' de forma segura
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Ocurrió un error inesperado durante el cálculo.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const currentPrice = getRawValue(apiData.price?.regularMarketPrice);
-
-  return (
-    <div className="bg-white text-gray-800 p-8 font-sans">
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-2xl font-bold mb-8 text-center text-gray-800">
-          Análisis de Valoración: {ticker}
-        </h2>
-        <div className="grid md:grid-cols-2 gap-8 mb-8">
-          <ProjectionsTable
-            estimates={estimates}
-            setEstimates={setEstimates}
-            financialAverages={financialAverages}
-          />
-          <ValuationMultiplesTable
-            currentPrice={currentPrice}
-            metrics={valuationMultiples}
-            loading={loadingMultiples}
-            targets={targets}
-            setTargets={setTargets}
-          />
-        </div>
-        <div className="text-center my-8">
-          <button
-            onClick={handleCalculation}
-            disabled={isLoading}
-            className="bg-blue-600 text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-blue-700 transition-colors duration-300 shadow-lg disabled:bg-gray-400 cursor-pointer disabled:cursor-not-allowed"
-          >
-            {isLoading ? "Calculando..." : "Calcular Valor Intrínseco"}
-          </button>
-        </div>
-        {error && <div className="text-red-500 text-center my-4">{error}</div>}
-        {valuationData && (
-          <IntrinsicValueResults
-            results={valuationData.valuationResults}
-            marginOfSafety={valuationData.marginOfSafety}
-            cagrResults={valuationData.cagrResults}
-            currentPrice={currentPrice}
-            multiples={valuationData.multiples}
-          />
-        )}
-      </div>
+          }}
+          currentPrice={currentPrice}
+        />
+      )}
     </div>
   );
 };
