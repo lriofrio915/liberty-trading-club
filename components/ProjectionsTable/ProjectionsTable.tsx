@@ -1,52 +1,11 @@
 // components/ProjectionsTable/ProjectionsTable.tsx
 "use client";
 
-import React, { Dispatch, SetStateAction, useMemo } from "react";
+import React, { Dispatch, SetStateAction } from "react";
 import Tooltip from "../Shared/Tooltips";
 import { QuoteSummaryResult } from "@/types/api";
 
 // --- INICIO: Lógica de Cálculo Movida al Frontend ---
-
-const getRawValue = (value: any): number => {
-  if (typeof value === "object" && value !== null && "raw" in value) {
-    return typeof value.raw === "number" ? value.raw : 0;
-  }
-  return typeof value === "number" ? value : 0;
-};
-
-const calculateAverageSalesGrowth = (history: any[]): string => {
-  if (!history || history.length < 2) return "N/A";
-  const growthRates: number[] = [];
-  for (let i = 0; i < history.length - 1; i++) {
-    const currentRevenue = getRawValue(history[i].totalRevenue);
-    const previousRevenue = getRawValue(history[i + 1].totalRevenue);
-    if (previousRevenue && previousRevenue !== 0) {
-      growthRates.push(
-        ((currentRevenue - previousRevenue) / previousRevenue) * 100
-      );
-    }
-  }
-  if (growthRates.length === 0) return "N/A";
-  const averageGrowth =
-    growthRates.reduce((sum, rate) => sum + rate, 0) / growthRates.length;
-  return averageGrowth.toFixed(2);
-};
-
-const calculateAverageEbitMargin = (history: any[]): string => {
-  if (!history || history.length === 0) return "N/A";
-  const margins: number[] = [];
-  for (const item of history) {
-    const ebit = getRawValue(item.ebit);
-    const revenue = getRawValue(item.totalRevenue);
-    if (revenue !== 0) {
-      margins.push((ebit / revenue) * 100);
-    }
-  }
-  if (margins.length === 0) return "N/A";
-  const averageMargin =
-    margins.reduce((sum, margin) => sum + margin, 0) / margins.length;
-  return averageMargin.toFixed(2);
-};
 
 // --- FIN: Lógica de Cálculo ---
 
@@ -73,7 +32,6 @@ interface Props {
 }
 
 const ProjectionsTable: React.FC<Props> = ({
-  apiData,
   estimates,
   setEstimates,
   financialAverages,

@@ -5,36 +5,28 @@ import React, { Dispatch, SetStateAction } from "react";
 import ProjectionsTable from "../ProjectionsTable/ProjectionsTable";
 import ValuationMultiplesTable from "../ValuationMultiplesTable/ValuationMultiplesTable";
 import IntrinsicValueResults from "../IntrinsicValueResults/IntrinsicValueResults";
-import { QuoteSummaryResult } from "@/types/api";
-import {
-  ValuationMetrics,
-  ValuationResult,
-  ValuationResults,
-} from "@/types/valuation";
+import { QuoteSummaryResult, YahooFinanceRawValue } from "@/types/api";
+import { ValuationMetrics, ValuationResults } from "@/types/valuation";
 
-// Definición de tipos para los estados que se manejarán
+// --- INTERFACES Y TIPOS (SIN CAMBIOS) ---
 interface EstimatesState {
   salesGrowth: number;
   ebitMargin: number;
   taxRate: number;
   sharesIncrease: number;
 }
-
 interface TargetsState {
   per: number;
   ev_ebitda: number;
   ev_ebit: number;
   ev_fcf: number;
 }
-
 interface FinancialAverages {
   salesGrowth: string;
   ebitMargin: string;
   taxRate: string;
   sharesIncrease: string;
 }
-
-// --- CORRECCIÓN: Interfaz de Props actualizada para aceptar todo lo que envía ReportPage ---
 interface Props {
   ticker: string;
   apiData: QuoteSummaryResult;
@@ -52,12 +44,23 @@ interface Props {
   cagr: number | null;
 }
 
-const getRawValue = (value: any): number => {
+// --- CORRECCIÓN CLAVE: Definimos un tipo específico para reemplazar 'any' ---
+type YahooFinanceValue = number | YahooFinanceRawValue | undefined | null;
+
+/**
+ * Extrae de forma segura el valor numérico 'raw' de un objeto de Yahoo Finance.
+ * @param value El valor que puede ser un número, un objeto, o nulo.
+ * @returns El valor numérico extraído, o 0 si no es válido.
+ */
+const getRawValue = (value: YahooFinanceValue): number => {
+  // Comprobamos si es un objeto válido con la propiedad 'raw'
   if (typeof value === "object" && value !== null && "raw" in value) {
     return typeof value.raw === "number" ? value.raw : 0;
   }
+  // Si no es un objeto, comprobamos si es un número
   return typeof value === "number" ? value : 0;
 };
+// -------------------------------------------------------------------------
 
 const ValuationDashboard: React.FC<Props> = ({
   ticker,

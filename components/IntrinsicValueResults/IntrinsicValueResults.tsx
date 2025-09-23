@@ -1,16 +1,17 @@
 // components/IntrinsicValueResults/IntrinsicValueResults.tsx
 import React from "react";
-import { ValuationResult, ValuationResults } from "@/types/valuation";
+import { ValuationResult, ValuationResults } from "@/types/valuation"; // Importamos los tipos corregidos
 
+// Interfaz de Props actualizada y simplificada
 interface Props {
-  results: ValuationResults;
-  marginOfSafety: number | string;
+  results: ValuationResults | null; // Aceptamos que los resultados pueden ser nulos al inicio
+  marginOfSafety: string | null;
   cagrResults: {
     per: number;
     ev_fcf: number;
     ev_ebitda: number;
     ev_ebit: number;
-  };
+  } | null;
   currentPrice: number;
 }
 
@@ -20,13 +21,13 @@ const IntrinsicValueResults: React.FC<Props> = ({
   cagrResults,
   currentPrice,
 }) => {
-  // 1. Añadimos una comprobación para evitar errores si no hay resultados
+  // 1. Comprobación robusta: si no hay resultados, no renderizar nada.
   if (!results || Object.keys(results).length === 0) {
-    return null; // No renderizar nada si no hay datos que mostrar
+    return null;
   }
 
-  // 2. Obtenemos los años y las métricas de forma dinámica
-  const years = Object.keys(results).sort(); // ej: ['2025e', '2026e', '2027e', ...]
+  // 2. Obtenemos los años y las métricas de forma dinámica (sin hardcodear)
+  const years = Object.keys(results).sort();
   const lastYear = years[years.length - 1];
   const metrics = Object.keys(results[years[0]]) as Array<
     keyof ValuationResult
@@ -80,27 +81,27 @@ const IntrinsicValueResults: React.FC<Props> = ({
                     key={`${metric}-${year}`}
                     className="py-2 px-3 text-center font-bold text-blue-600"
                   >
-                    ${results[year][metric].toFixed(2)}
+                    ${results[year]?.[metric]?.toFixed(2) ?? "0.00"}
                   </td>
                 ))}
               </tr>
             ))}
             <tr className="bg-gray-100">
               <td className="py-2 px-3 font-bold">Promedio</td>
-              {years.map((year) => (
-                <td
-                  key={`avg-${year}`}
-                  className="py-2 px-3 font-bold text-center text-green-600"
-                >
-                  $
-                  {(
-                    Object.values(results[year]).reduce(
-                      (sum, val) => sum + val,
-                      0
-                    ) / metrics.length
-                  ).toFixed(2)}
-                </td>
-              ))}
+              {years.map((year) => {
+                const yearValues = Object.values(results[year]);
+                const avg =
+                  yearValues.reduce((sum, val) => sum + val, 0) /
+                  yearValues.length;
+                return (
+                  <td
+                    key={`avg-${year}`}
+                    className="py-2 px-3 font-bold text-center text-green-600"
+                  >
+                    ${avg.toFixed(2)}
+                  </td>
+                );
+              })}
             </tr>
           </tbody>
         </table>
@@ -108,12 +109,13 @@ const IntrinsicValueResults: React.FC<Props> = ({
 
       <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
         <h4 className="font-semibold text-blue-800 mb-2">
-          ¿Cómo calculamos el valor intrínseco?
+          ¿Cómo se calcula el valor intrínseco?
         </h4>
         <p className="text-sm text-blue-700">
           Utilizamos las proyecciones financieras que ingresaste para los
-          próximos años, aplicando los múltiplos de valoración objetivo para
-          determinar el precio teórico justo de la acción.
+          próximos años, aplicando los múltiplos de valoración objetivo. Cada
+          métrica combina tus estimaciones de crecimiento con múltiplos de
+          referencia para determinar el precio teórico justo de la acción.
         </p>
       </div>
 
@@ -135,10 +137,7 @@ const IntrinsicValueResults: React.FC<Props> = ({
         <div className="bg-gray-100 p-3 rounded-lg flex-1 min-w-[200px] w-full text-center">
           <p className="text-gray-500 text-sm">Retorno Anualizado (CAGR)</p>
           <p className="font-bold text-2xl text-green-600">
-            {typeof cagrResults.per === "number"
-              ? cagrResults.per.toFixed(2)
-              : "N/A"}
-            %
+            {cagrResults?.per?.toFixed(2) ?? "N/A"}%
           </p>
         </div>
       </div>

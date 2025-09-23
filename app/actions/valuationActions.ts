@@ -207,7 +207,7 @@ const calculateAverageSalesGrowth = (revenues: number[]): string => {
   if (growthRates.length === 0) return "N/A";
   const averageGrowth =
     growthRates.reduce((sum, rate) => sum + rate, 0) / growthRates.length;
-  return `${averageGrowth.toFixed(2)}%`;
+  return `${averageGrowth.toFixed(2)}`;
 };
 
 const calculateAverageEbitMargin = (
@@ -240,7 +240,7 @@ const calculateAverageEbitMargin = (
   if (ebitMargins.length === 0) return "N/A";
   const averageMargin =
     ebitMargins.reduce((sum, margin) => sum + margin, 0) / ebitMargins.length;
-  return `${averageMargin.toFixed(2)}%`;
+  return `${averageMargin.toFixed(2)}`;
 };
 
 const calculateAverageTaxRate = (
@@ -275,7 +275,7 @@ const calculateAverageTaxRate = (
   if (taxRates.length === 0) return "N/A";
   const averageRate =
     taxRates.reduce((sum, rate) => sum + rate, 0) / taxRates.length;
-  return `${averageRate.toFixed(2)}%`;
+  return `${averageRate.toFixed(2)}`;
 };
 
 const calculateAverageSharesIncrease = (shares: number[]): string => {
@@ -300,7 +300,7 @@ const calculateAverageSharesIncrease = (shares: number[]): string => {
   const averageIncrease =
     sharesIncreases.reduce((sum, rate) => sum + rate, 0) /
     sharesIncreases.length;
-  return `${averageIncrease.toFixed(2)}%`;
+  return `${averageIncrease.toFixed(2)}`;
 };
 
 // --- SERVER ACTION PARA CALCULAR PROMEDIOS FINANCIEROS ---
