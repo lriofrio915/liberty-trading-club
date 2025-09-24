@@ -1,33 +1,59 @@
-import mongoose, { Schema, Document, models, Model } from "mongoose";
+import { Schema, model, models, Document } from "mongoose";
 
-export interface IPortfolio extends Document {
+// Interfaz para el subdocumento de Cartera
+export interface ICartera extends Document {
   name: string;
   slug: string;
   tickers: string[];
 }
 
-const PortfolioSchema: Schema = new Schema(
+// Interfaz para el documento principal del Portafolio
+export interface IPortfolio extends Document {
+  name: string;
+  slug: string;
+  tickers: string[]; // Mantenemos los tickers principales
+  carteras: ICartera[]; // Añadimos el array de carteras
+}
+
+// Esquema para el subdocumento de Cartera
+const CarteraSchema = new Schema<ICartera>({
+  name: {
+    type: String,
+    required: [true, "El nombre de la cartera es obligatorio."],
+  },
+  slug: {
+    type: String,
+    required: [true, "El slug de la cartera es obligatorio."],
+  },
+  tickers: {
+    type: [String],
+    default: [],
+  },
+});
+
+const PortfolioSchema = new Schema<IPortfolio>(
   {
     name: {
       type: String,
-      required: [true, "El nombre es obligatorio."],
-      trim: true,
+      required: [true, "El nombre del portafolio es obligatorio."],
     },
     slug: {
       type: String,
-      required: [true, "El slug es obligatorio."],
+      required: [true, "El slug del portafolio es obligatorio."],
       unique: true,
-      index: true,
     },
+    // Mantenemos la lista de tickers principal
     tickers: {
       type: [String],
-      default: [],
+      required: true,
     },
+    // Y añadimos el array de carteras anidadas
+    carteras: [CarteraSchema],
   },
   { timestamps: true }
 );
 
-const Portfolio: Model<IPortfolio> =
-  models.Portfolio || mongoose.model<IPortfolio>("Portfolio", PortfolioSchema);
+const Portfolio =
+  models.Portfolio || model<IPortfolio>("Portfolio", PortfolioSchema);
 
 export default Portfolio;
