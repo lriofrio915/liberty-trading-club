@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   TrashIcon,
@@ -14,9 +14,8 @@ import {
   addTickerToPortfolio,
   removeTickerFromPortfolio,
   deletePortfolio,
-} from "../../app/actions/portfolioActions";
+} from "@/app/actions/portfolioActions"; // 1. CORRECCIÓN: Ruta de importación mejorada.
 
-// Esta interfaz es para los datos de activos que obtenemos de la API de stocks
 interface AssetData {
   ticker: string;
   name: string;
@@ -41,20 +40,21 @@ export default function PortfolioDetailPageClient({
   const [sortBy, setSortBy] = useState<"sector" | "industry" | "none">("none");
   const router = useRouter();
 
-  // Función para obtener los datos de los tickers
-  const fetchAssetData = async (tickers: string[]) => {
+  const fetchAssetData = useCallback(async (tickers: string[]) => {
     if (tickers.length === 0) {
       setAssets([]);
       setLoading(false);
       return;
     }
     setLoading(true);
+    setError(null); // Limpiar errores previos
     try {
       const response = await fetch(`/api/stocks?tickers=${tickers.join(",")}`);
       const result = await response.json();
-      if (!result.success)
-        throw new Error(result.message || "Error fetching asset data");
-
+      if (!result.success) {
+        throw new Error(result.message || "Error al obtener datos de activos");
+      }
+      
       const fetchedAssets = result.data.map((item: ApiAssetItem) => ({
         ticker: item.ticker,
         name: item.data.price?.longName || item.ticker,
@@ -65,26 +65,24 @@ export default function PortfolioDetailPageClient({
       }));
       setAssets(fetchedAssets);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load assets.");
+      setError(err instanceof Error ? err.message : "No se pudieron cargar los activos.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useState(() => {
+  // 2. CORRECCIÓN: Usamos useEffect para cargar datos, no useState.
+  useEffect(() => {
     fetchAssetData(portfolio.tickers);
-  });
+  }, [portfolio.tickers, fetchAssetData]);
 
-  // Lógica de ordenamiento
   const sortedAssets = useMemo(() => {
     const sortableAssets = [...assets];
     if (sortBy === "sector") {
       return sortableAssets.sort((a, b) => a.sector.localeCompare(b.sector));
     }
     if (sortBy === "industry") {
-      return sortableAssets.sort((a, b) =>
-        a.industry.localeCompare(b.industry)
-      );
+      return sortableAssets.sort((a, b) => a.industry.localeCompare(b.industry));
     }
     return sortableAssets;
   }, [assets, sortBy]);
@@ -94,32 +92,33 @@ export default function PortfolioDetailPageClient({
     const tickerToAdd = newTickerInput.trim().toUpperCase();
     if (!tickerToAdd) return;
 
-    // Lógica para añadir ticker usando la Server Action
-    const updatedPortfolio = await addTickerToPortfolio(
-      portfolio.slug,
-      tickerToAdd
-    );
-    setPortfolio(updatedPortfolio);
-    await fetchAssetData(updatedPortfolio.tickers); // Recargar datos de activos
-    setNewTickerInput("");
+    try {
+      const updatedPortfolio = await addTickerToPortfolio(portfolio.slug, tickerToAdd);
+      setPortfolio(updatedPortfolio); // Actualiza el estado local con la respuesta
+      setNewTickerInput("");
+    } catch (err) {
+       setError(err instanceof Error ? err.message : "No se pudo añadir el ticker.");
+    }
   };
 
   const handleDeleteTicker = async (tickerToDelete: string) => {
-    // Lógica para eliminar ticker usando la Server Action
-    const updatedPortfolio = await removeTickerFromPortfolio(
-      portfolio.slug,
-      tickerToDelete
-    );
-    setPortfolio(updatedPortfolio);
-    setAssets((prev) => prev.filter((a) => a.ticker !== tickerToDelete));
+    try {
+        const updatedPortfolio = await removeTickerFromPortfolio(portfolio.slug, tickerToDelete);
+        setPortfolio(updatedPortfolio); // Actualiza el estado local
+    } catch (err) {
+        setError(err instanceof Error ? err.message : "No se pudo eliminar el ticker.");
+    }
   };
 
   const handleDeletePortfolio = async () => {
-    if (
-      window.confirm("¿Estás seguro de que quieres eliminar este portafolio?")
-    ) {
-      await deletePortfolio(portfolio.slug);
-      router.push("/portafolio"); // Redirigir al panel principal
+    if (window.confirm("¿Estás seguro de que quieres eliminar este portafolio?")) {
+      try {
+        await deletePortfolio(portfolio.slug);
+        router.push("/portafolio");
+        router.refresh(); // Fuerza una actualización de la página anterior
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "No se pudo eliminar el portafolio.");
+      }
     }
   };
 
@@ -144,10 +143,7 @@ export default function PortfolioDetailPageClient({
           <h2 className="text-2xl font-bold text-center text-[#0A2342] mb-6">
             Gestionar Activos
           </h2>
-          <form
-            onSubmit={handleAddTicker}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-4"
-          >
+          <form onSubmit={handleAddTicker} className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-4">
             <input
               type="text"
               value={newTickerInput}
@@ -155,135 +151,69 @@ export default function PortfolioDetailPageClient({
               className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 w-full sm:w-auto"
               placeholder="Añadir Ticker (ej: GOOGL)"
             />
-            <button
-              type="submit"
-              className="bg-[#0A2342] text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-800 flex items-center justify-center w-full sm:w-auto"
-            >
+            <button type="submit" className="bg-[#0A2342] text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-800 flex items-center justify-center w-full sm:w-auto">
               <PlusCircleIcon className="h-5 w-5 mr-2" />
               Añadir Activo
             </button>
           </form>
           <div className="text-center">
-            <button
-              onClick={handleDeletePortfolio}
-              className="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center justify-center w-full sm:w-auto mx-auto"
-            >
+            <button onClick={handleDeletePortfolio} className="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center justify-center w-full sm:w-auto mx-auto">
               <TrashIcon className="h-5 w-5 mr-2" />
               Eliminar Portafolio
             </button>
           </div>
         </section>
 
+        {/* 3. CORRECCIÓN: Mostramos el error si existe */}
+        {error && (
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-8 rounded-md" role="alert">
+                <p className="font-bold">Error</p>
+                <p>{error}</p>
+            </div>
+        )}
+
         <section className="bg-white rounded-lg shadow-xl p-6 md:p-8">
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white">
               <thead className="bg-gray-100">
-                {/* Headers de la tabla (ITEM, ACTIVO, etc.) */}
                 <tr>
-                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">
-                    ITEM
+                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">ITEM</th>
+                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">ACTIVO</th>
+                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">TICKER</th>
+                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase cursor-pointer" onClick={() => setSortBy(sortBy === 'sector' ? 'none' : 'sector')}>
+                    SECTOR {sortBy === 'sector' ? <ChevronUpIcon className="h-4 w-4 inline" /> : <ChevronDownIcon className="h-4 w-4 inline" />}
                   </th>
-                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">
-                    ACTIVO
+                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase cursor-pointer" onClick={() => setSortBy(sortBy === 'industry' ? 'none' : 'industry')}>
+                    INDUSTRIA {sortBy === 'industry' ? <ChevronUpIcon className="h-4 w-4 inline" /> : <ChevronDownIcon className="h-4 w-4 inline" />}
                   </th>
-                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">
-                    TICKER
-                  </th>
-                  <th
-                    className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase cursor-pointer"
-                    onClick={() =>
-                      setSortBy(sortBy === "sector" ? "none" : "sector")
-                    }
-                  >
-                    SECTOR{" "}
-                    {sortBy === "sector" ? (
-                      <ChevronUpIcon className="h-4 w-4 inline" />
-                    ) : (
-                      <ChevronDownIcon className="h-4 w-4 inline" />
-                    )}
-                  </th>
-                  <th
-                    className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase cursor-pointer"
-                    onClick={() =>
-                      setSortBy(sortBy === "industry" ? "none" : "industry")
-                    }
-                  >
-                    INDUSTRIA{" "}
-                    {sortBy === "industry" ? (
-                      <ChevronUpIcon className="h-4 w-4 inline" />
-                    ) : (
-                      <ChevronDownIcon className="h-4 w-4 inline" />
-                    )}
-                  </th>
-                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">
-                    PRECIO ACTUAL
-                  </th>
-                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">
-                    CAMBIO % DIARIO
-                  </th>
-                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">
-                    INFORME
-                  </th>
-                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">
-                    ACCIONES
-                  </th>
+                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">PRECIO ACTUAL</th>
+                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">CAMBIO % DIARIO</th>
+                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">INFORME</th>
+                  <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 uppercase">ACCIONES</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-200">
                 {loading ? (
-                  <tr>
-                    <td colSpan={9} className="text-center py-8">
-                      Cargando activos...
-                    </td>
-                  </tr>
+                  <tr><td colSpan={9} className="text-center py-8 text-gray-500">Cargando activos...</td></tr>
                 ) : (
                   sortedAssets.map((asset, index) => (
-                    <tr
-                      key={asset.ticker}
-                      className="border-b border-gray-200 hover:bg-gray-50"
-                    >
-                      <td className="py-4 px-6 text-sm text-gray-800">
-                        {index + 1}
-                      </td>
-                      <td className="py-4 px-6 text-sm font-medium text-gray-900">
-                        {asset.name}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-800">
-                        {asset.ticker}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-800">
-                        {asset.sector}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-800">
-                        {asset.industry}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-800">
-                        {asset.price ? `$${asset.price.toFixed(2)}` : "N/A"}
-                      </td>
-                      <td
-                        className={`py-4 px-6 text-sm font-semibold ${getPriceColor(
-                          asset.dailyChange
-                        )}`}
-                      >
-                        {asset.dailyChange
-                          ? `${(asset.dailyChange * 100).toFixed(2)}%`
-                          : "N/A"}
+                    <tr key={asset.ticker} className="hover:bg-gray-50">
+                      <td className="py-4 px-6 text-sm text-gray-800">{index + 1}</td>
+                      <td className="py-4 px-6 text-sm font-medium text-gray-900">{asset.name}</td>
+                      <td className="py-4 px-6 text-sm text-gray-800">{asset.ticker}</td>
+                      <td className="py-4 px-6 text-sm text-gray-800">{asset.sector}</td>
+                      <td className="py-4 px-6 text-sm text-gray-800">{asset.industry}</td>
+                      <td className="py-4 px-6 text-sm text-gray-800">{asset.price ? `$${asset.price.toFixed(2)}` : "N/A"}</td>
+                      <td className={`py-4 px-6 text-sm font-semibold ${getPriceColor(asset.dailyChange)}`}>
+                        {asset.dailyChange ? `${(asset.dailyChange * 100).toFixed(2)}%` : "N/A"}
                       </td>
                       <td className="py-4 px-6 text-sm">
-                        <Link
-                          href={`/portafolio/${
-                            portfolio.slug
-                          }/${asset.ticker.toLowerCase()}`}
-                          className="text-blue-600 hover:underline"
-                        >
+                        <Link href={`/portafolio/${portfolio.slug}/${asset.ticker.toLowerCase()}`} className="text-blue-600 hover:underline">
                           Ver más
                         </Link>
                       </td>
                       <td className="py-4 px-6 text-sm">
-                        <button
-                          onClick={() => handleDeleteTicker(asset.ticker)}
-                          className="text-red-500 hover:text-red-700"
-                        >
+                        <button onClick={() => handleDeleteTicker(asset.ticker)} className="text-red-500 hover:text-red-700">
                           <TrashIcon className="h-5 w-5" />
                         </button>
                       </td>

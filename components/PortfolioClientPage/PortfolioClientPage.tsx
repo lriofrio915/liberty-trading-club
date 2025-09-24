@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, ReactNode } from "react";
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import AddPortfolioForm from "../AddPortfolioForm/AddPortfolioForm";
-import { Portfolio } from "@/types/api";
 
 interface PortfolioClientPageProps {
   children: ReactNode;
@@ -48,7 +47,9 @@ export default function PortfolioClientPage({
       </div>
 
       {isFormOpen && (
-        <AddPortfolioForm onClose={handleCloseForm} formRef={formRef} />
+        <AddPortfolioForm onClose={handleCloseForm} formRef={formRef} onPortfolioAdded={function (): void {
+          throw new Error("Function not implemented.");
+        } } />
       )}
     </>
   );

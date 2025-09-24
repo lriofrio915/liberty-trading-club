@@ -7,6 +7,6 @@ export default async function PortfoliosDashboardPage() {
 
   return (
     // Pasamos los datos iniciales al componente cliente.
-    <PortfoliosDashboardClient initialPortfolios={initialPortfolios} />
+    <PortfoliosDashboardClient portfolios={initialPortfolios} />
   );
 }

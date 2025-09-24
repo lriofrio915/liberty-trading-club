@@ -4,30 +4,30 @@ import connectToDB from "@/lib/mongodb";
 import { Portfolio as PortfolioType } from "@/types/api";
 import PortfolioDetailPageClient from "@/components/PortfolioDetailPageClient/PortfolioDetailPageClient";
 
-// Función para obtener un solo portafolio por su slug desde la DB
 async function getPortfolioBySlug(slug: string): Promise<PortfolioType | null> {
   await connectToDB();
-  const portfolio = await Portfolio.findOne({ slug }).lean(); // .lean() para un objeto JS plano
+  const portfolio = await Portfolio.findOne({ slug }).lean();
   if (!portfolio) {
     return null;
   }
   return JSON.parse(JSON.stringify(portfolio));
 }
 
+// 1. CORRECCIÓN: Tipamos `params` como una Promesa que resuelve al objeto.
 interface PageProps {
-  params: {
+  params: Promise<{
     operador: string;
-  };
+  }>;
 }
 
 export default async function PortfolioDetailPage({ params }: PageProps) {
-  const { operador } = params;
+  // 2. CORRECCIÓN: Usamos `await` para obtener el objeto de la promesa.
+  const { operador } = await params;
   const portfolio = await getPortfolioBySlug(operador);
 
   if (!portfolio) {
-    notFound(); // Muestra la página 404 de Next.js si no se encuentra
+    notFound();
   }
 
-  // Pasamos el portafolio encontrado al componente cliente
   return <PortfolioDetailPageClient portfolio={portfolio} />;
 }

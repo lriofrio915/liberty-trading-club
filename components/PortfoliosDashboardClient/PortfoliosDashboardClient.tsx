@@ -11,23 +11,21 @@ import AddPortfolioForm from "@/components/AddPortfolioForm/AddPortfolioForm";
 import { Portfolio } from "@/types/api";
 
 interface Props {
-  initialPortfolios: Portfolio[];
+  // Renombramos la prop para mayor claridad
+  portfolios: Portfolio[];
 }
 
-export default function PortfoliosDashboardClient({
-  initialPortfolios,
-}: Props) {
-  // El estado se inicializa con los datos del servidor, pero puede ser modificado por acciones del cliente.
-  const [portfolios, setPortfolios] = useState<Portfolio[]>(initialPortfolios);
+// 1. CORRECCIÓN: Renombramos `initialPortfolios` a `portfolios` directamente en la desestructuración.
+export default function PortfoliosDashboardClient({ portfolios }: Props) {
+  // 2. CORRECCIÓN: Eliminamos la línea `const [portfolios, setPortfolios] = useState...`
+  // Ahora usamos la prop `portfolios` directamente para renderizar la lista.
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const router = useRouter();
   const formRef = useRef<HTMLDivElement | null>(null);
 
-  // Esta función ya no es necesaria para guardar, pero la mantenemos para actualizar el estado
-  // de forma optimista si quisiéramos (aunque revalidatePath ya lo hace).
-  // Por ahora, su propósito principal es cerrar el formulario.
   const handlePortfolioAdded = () => {
-    // La revalidación de Next.js se encargará de actualizar la lista.
+    // La revalidación de Next.js se encarga de actualizar la lista.
     setIsFormOpen(false);
   };
 
@@ -59,6 +57,7 @@ export default function PortfoliosDashboardClient({
               </p>
             </button>
 
+            {/* 3. CORRECCIÓN: El `map` ahora itera directamente sobre la prop `portfolios` */}
             {portfolios.map((portfolio) => (
               <div
                 key={portfolio.slug}
