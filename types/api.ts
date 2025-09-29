@@ -4,9 +4,18 @@
 // Interfaces de Portafolio y Cartera
 // =====================================
 
+export interface MoverQuote {
+  symbol: string;
+  regularMarketChangePercent?: number;
+  regularMarketPrice?: number;
+  longName?: string;
+  // Puedes añadir más propiedades opcionales que vengan de la API si las necesitas
+  [key: string]: any;
+}
+
 // NUEVA INTERFAZ para el sub-documento de Cartera
 export interface Cartera {
-  _id: string; // MongoDB asignará un ID a cada cartera anidada
+  _id?: string; // MongoDB asignará un ID a cada cartera anidada
   name: string;
   slug: string;
   tickers: string[];
@@ -54,11 +63,11 @@ export interface YahooFinanceRawValue {
   longFmt?: string;
 }
 
-export type RawValueType = 
-  | number 
-  | string 
-  | YahooFinanceRawValue 
-  | null 
+export type RawValueType =
+  | number
+  | string
+  | YahooFinanceRawValue
+  | null
   | undefined;
 
 export type GetRawValueReturnType = number | string | null | undefined;

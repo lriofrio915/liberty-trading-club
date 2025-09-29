@@ -1,155 +1,135 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { searchStocksAction } from "../actions/searchActions";
+import { useState, useEffect } from "react";
+import StockScreenerSearch from "@/components/StockScreenerSearch/StockScreenerSearch";
+import TopMovers from "@/components/TopMovers/TopMovers";
+import Recommendations from "@/components/Recommendations/Recommendations";
+import {
+  getDayMovers,
+  getYtdMovers,
+  getRecommendations,
+} from "@/app/actions/marketActions";
+import { MoverQuote } from "@/types/api";
+import { Recommendation } from "@/types/market";
 
-// La interfaz para los resultados se alinea con lo que devuelve la Server Action
-interface SearchSuggestion {
-  symbol: string;
-  name: string;
-  type: string;
-  region: string;
-  currency: string;
-}
+// Definimos el tipo para los datos de los movers
+type MoversData = {
+  gainers: MoverQuote[];
+  losers: MoverQuote[];
+  error: string | null;
+};
 
-export default function StockScreener() {
-  const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [isListVisible, setIsListVisible] = useState(false);
+export default function StockScreenerPage() {
+  const [view, setView] = useState<"1D" | "YTD">("1D");
+  const [dayMovers, setDayMovers] = useState<MoversData>({
+    gainers: [],
+    losers: [],
+    error: null,
+  });
+  const [ytdMovers, setYtdMovers] = useState<MoversData>({
+    gainers: [],
+    losers: [],
+    error: null,
+  });
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // useTransition para manejar el estado de carga sin bloquear la UI
-  const [isPending, startTransition] = useTransition();
-  const router = useRouter();
-
-  // Función que se ejecuta cuando el input cambia
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newQuery = e.target.value;
-    setQuery(newQuery);
-
-    if (!newQuery.trim() || newQuery.trim().length < 2) {
-      setSuggestions([]);
-      setError(null);
-      setIsListVisible(false);
-      return;
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      // Obtenemos todos los datos en paralelo
+      const [dayMoversData, ytdMoversData, recommendationsData] =
+        await Promise.all([
+          getDayMovers(),
+          getYtdMovers(),
+          getRecommendations(),
+        ]);
+        
+      setDayMovers(dayMoversData);
+      setYtdMovers(ytdMoversData);
+      setRecommendations(recommendationsData);
+      setLoading(false);
     }
-
-    setIsListVisible(true);
-
-    // startTransition envuelve la llamada a la Server Action
-    startTransition(async () => {
-      setError(null);
-      const { results, error: actionError } = await searchStocksAction(
-        newQuery
-      );
-      if (actionError) {
-        setError(actionError);
-        setSuggestions([]);
-      } else {
-        setSuggestions(results.filter((item) => item.type === "EQUITY"));
-      }
-    });
-  };
-
-  const viewReport = (ticker: string) => {
-    setQuery("");
-    setSuggestions([]);
-    setIsListVisible(false);
-    router.push(`/stock-screener/${ticker.toLowerCase()}`);
-  };
-
+    loadData();
+  }, []);
+  
+  const moversError = view === "1D" ? dayMovers.error : ytdMovers.error;
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Stock Screener
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Busca acciones por ticker o nombre y accede a sus informes
-            financieros.
+            Busca acciones y analiza las tendencias del mercado y
+            recomendaciones.
           </p>
+          <Recommendations initialRecommendations={recommendations} />
         </div>
 
-        <div className="relative">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+
+        {/* Botones para cambiar la vista */}
+        <div className="my-8 flex justify-center items-center gap-4">
+          <button
+            onClick={() => setView("1D")}
+            className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
+              view === "1D"
+                ? "bg-blue-600 text-white shadow-lg"
+                : "bg-white text-gray-700 hover:bg-gray-200"
+              }`}
+          >
+            1 Día
+          </button>
+          <button
+            onClick={() => setView("YTD")}
+            className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
+              view === "YTD"
+              ? "bg-blue-600 text-white shadow-lg"
+              : "bg-white text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            YTD
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="text-center text-gray-500">
+            Cargando datos del mercado...
+          </div>
+        ) : (
+          <>
+            {moversError && (
+              <div
+                className="my-8 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md"
+                role="alert"
+                >
+                <p className="font-bold">Aviso de Mercado</p>
+                <p>{moversError}</p>
               </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-3 py-4 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Buscar por ticker o nombre (ej: AAPL o Apple)"
-                value={query}
-                onChange={handleInputChange} // La acción se dispara aquí directamente
-                onFocus={() => query.length > 1 && setIsListVisible(true)}
-                onBlur={() => setTimeout(() => setIsListVisible(false), 200)}
+            )}
+            <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <TopMovers
+                title={
+                  view === "1D" ? "Top Ganadores del Día" : "Top Ganadores YTD"
+                }
+                movers={view === "1D" ? dayMovers.gainers : ytdMovers.gainers}
+                type="gainers"
+              />
+              <TopMovers
+                title={
+                  view === "1D"
+                    ? "Grandes Ofertas del Día"
+                    : "Grandes Ofertas YTD"
+                  }
+                movers={view === "1D" ? dayMovers.losers : ytdMovers.losers}
+                type="losers"
               />
             </div>
-          </div>
-
-          {isListVisible && query.length >= 2 && (
-            <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg">
-              {isPending && (
-                <div className="p-4 text-gray-500">Buscando...</div>
-              )}
-              {error && <div className="p-4 text-red-500">{error}</div>}
-              {!isPending && suggestions.length > 0 && (
-                <ul className="max-h-60 overflow-y-auto">
-                  {suggestions.map((item) => (
-                    <li
-                      key={item.symbol}
-                      className="px-4 py-3 hover:bg-indigo-50 cursor-pointer"
-                      onMouseDown={() => viewReport(item.symbol)}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-bold text-indigo-700">
-                            {item.symbol}
-                          </p>
-                          <p className="text-sm text-gray-600">{item.name}</p>
-                        </div>
-                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-                          {item.region}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {!isPending &&
-                !error &&
-                suggestions.length === 0 &&
-                query.length > 1 && (
-                  <div className="p-4 text-gray-500">
-                    No se encontraron acciones.
-                  </div>
-                )}
-            </div>
-          )}
-        </div>
-
-        {!query && (
-          <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Comienza tu búsqueda
-            </h3>
-            <ul className="list-disc pl-5 space-y-2 text-gray-600">
-              <li>Escribe al menos 2 caracteres para ver sugerencias.</li>
-              <li>Puedes buscar por el símbolo del ticker (ej: &quot;MSFT&quot;).</li>
-              <li>
-                También puedes buscar por el nombre de la empresa (ej:
-                &quot;Microsoft&quot;).
-              </li>
-              <li>
-                Selecciona un resultado para ver el informe financiero completo.
-              </li>
-            </ul>
-          </div>
+          </>
         )}
+        <StockScreenerSearch/>
       </div>
     </div>
   );
