@@ -32,65 +32,74 @@ export async function GET() {
 
     // Obtener todo el texto del cuerpo de la página para buscar los valores
     const pageText = $("body").text();
-    // Para depuración: console.log("Texto completo de la página (primeros 500 caracteres):", pageText.substring(0, 500));
+    const cleanText = pageText.replace(/\s+/g, " ").trim();
 
-    // Expresión regular para encontrar el valor actual de la tasa de interés:
-    // Busca "held rates steady at X%–Y%", y captura el segundo valor (Y)
-    const actualMatch = pageText.match(
-      /held rates steady at\s+[\d.]+?%–([\d.]+?)%/i
-    );
-    if (actualMatch && actualMatch[1]) {
-      actualValue = parseFloat(actualMatch[1]);
-      // Para depuración: console.log("Actual Match (Interest Rate):", actualMatch[1], "Parsed:", actualValue);
+    // --- ESTRATEGIA MEJORADA ---
+    // Patrones para el valor actual, priorizando los más específicos
+    const actualValuePatterns = [
+      // Nuevo patrón para "cut rates... bringing it to X%-Y% range"
+      /bringing it to the [\d.]+?%–([\d.]+?)% range/i,
+      // Patrón anterior para "held rates steady at X%–Y%"
+      /held rates steady at\s+[\d.]+?%–([\d.]+?)%/i,
+    ];
+
+    for (const pattern of actualValuePatterns) {
+      const match = cleanText.match(pattern);
+      if (match && match[1]) {
+        actualValue = parseFloat(match[1]);
+        break; // Salir del bucle una vez que se encuentra una coincidencia
+      }
     }
 
-    // Lógica para encontrar la previsión:
-    // Si dice "as expected" y ya tenemos el valor actual, la previsión es la misma
-    if (actualValue !== null && pageText.includes("as expected")) {
+    // Lógica para encontrar la previsión
+    if (
+      actualValue !== null &&
+      (cleanText.includes("in line with expectations") ||
+        cleanText.includes("as expected"))
+    ) {
       forecastValue = actualValue;
-      // Para depuración: console.log("Forecast Match (Interest Rate - As Expected):", forecastValue);
     } else {
-      // Fallback para buscar una previsión explícita si la frase anterior no está presente
-      // Esto podría ser útil si la frase cambia o si hay un número de previsión directo.
-      const forecastExplicitMatch = pageText.match(
+      // Fallback si la previsión no está "en línea" y se menciona explícitamente
+      const forecastExplicitMatch = cleanText.match(
         /(?:market expectations of|forecasts of)\s+([\d.]+?)%/i
       );
       if (forecastExplicitMatch && forecastExplicitMatch[1]) {
         forecastValue = parseFloat(forecastExplicitMatch[1]);
-        // Para depuración: console.log("Forecast Match (Interest Rate - Explicit):", forecastExplicitMatch[1], "Parsed:", forecastValue);
       }
     }
 
-    // Fallback para buscar en tablas si las expresiones regulares no encuentran los valores
-    $(".table-responsive .table-hover tbody tr").each((i, el) => {
-      const variableName = $(el).find("td a").first().text().trim();
-      if (variableName.includes("Interest Rate")) {
-        const values = $(el)
-          .find("td")
-          .map((j, td) => $(td).text().trim())
-          .get();
-        if (values[1] && actualValue === null) {
-          actualValue = parseFloat(
-            values[1].replace("%", "").replace(",", ".")
-          );
+    // Fallback: buscar en tablas si las expresiones regulares no encuentran los valores
+    if (actualValue === null || forecastValue === null) {
+      $(".table-responsive .table-hover tbody tr").each((i, el) => {
+        const variableName = $(el).find("td a").first().text().trim();
+        if (variableName.includes("Interest Rate")) {
+          const values = $(el)
+            .find("td")
+            .map((j, td) => $(td).text().trim())
+            .get();
+          if (values[1] && actualValue === null) {
+            actualValue = parseFloat(
+              values[1].replace("%", "").replace(",", ".")
+            );
+          }
+          if (values[2] && forecastValue === null) {
+            forecastValue = parseFloat(
+              values[2].replace("%", "").replace(",", ".")
+            );
+          }
+          return false; // Detener el bucle si ya encontramos los datos
         }
-        if (values[2] && forecastValue === null) {
-          forecastValue = parseFloat(
-            values[2].replace("%", "").replace(",", ".")
-          );
-        }
-        return false;
-      }
-    });
+      });
+    }
 
     if (actualValue === null || forecastValue === null) {
       console.warn(
         "No se pudieron encontrar ambos valores (actual y previsión) para la Tasa de Interés."
       );
-      return NextResponse.json<ScrapedData>( // Tipado explícito de la respuesta
+      return NextResponse.json<ScrapedData>(
         {
           error: "No se pudieron extraer los datos de Tasa de Interés.",
-          variable: "Tasa de Interés", // Proporcionar todas las propiedades de ScrapedData
+          variable: "Tasa de Interés",
           actualValue: null,
           forecastValue: null,
         },
@@ -99,19 +108,17 @@ export async function GET() {
     }
 
     return NextResponse.json<ScrapedData>({
-      // Tipado explícito de la respuesta
       variable: "Tasa de Interés",
       actualValue,
       forecastValue,
     });
   } catch (error: unknown) {
-    // Cambiado 'any' a 'unknown'
-    const errorMessage = error instanceof Error ? error.message : String(error); // Manejo seguro del tipo 'unknown'
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Error al hacer scraping de Tasa de Interés:", errorMessage);
-    return NextResponse.json<ScrapedData>( // Tipado explícito de la respuesta
+    return NextResponse.json<ScrapedData>(
       {
         error: `Fallo al obtener datos de Tasa de Interés: ${errorMessage}`,
-        variable: "Tasa de Interés", // Proporcionar todas las propiedades de ScrapedData
+        variable: "Tasa de Interés",
         actualValue: null,
         forecastValue: null,
       },

@@ -161,7 +161,7 @@ export default function Navbar({ portfolios }: NavbarProps) {
                     className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E]"
                     onClick={closeAllMenus}
                   >
-                    Estrategia NQ
+                    Estrategia MNQ
                   </Link>
                   <Link
                     href="/manuales/SP500-1"
@@ -169,13 +169,6 @@ export default function Navbar({ portfolios }: NavbarProps) {
                     onClick={closeAllMenus}
                   >
                     Estrategia MES
-                  </Link>
-                  <Link
-                    href="/manuales/SP500-2"
-                    className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E]"
-                    onClick={closeAllMenus}
-                  >
-                    Estrategia ES
                   </Link>
                 </div>
               )}
@@ -228,11 +221,11 @@ export default function Navbar({ portfolios }: NavbarProps) {
                     )}
                   </div>
                   <Link
-                    href="/stock-screener"
+                    href="/recomendaciones"
                     className="block px-4 py-2 text-sm text-white hover:bg-[#2A4A7E]"
                     onClick={closeAllMenus}
                   >
-                    Stock Screener
+                    Recomendaciones
                   </Link>
                 </div>
               )}
@@ -339,11 +332,11 @@ export default function Navbar({ portfolios }: NavbarProps) {
                 Herramientas:
               </span>
               <Link
-                href="/stock-screener"
+                href="/recomendaciones"
                 className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
                 onClick={closeAllMenus}
               >
-                Stock Screener
+                Recomendaciones
               </Link>
               <Link
                 href="/sentimiento-macro/NQ"
@@ -394,7 +387,7 @@ export default function Navbar({ portfolios }: NavbarProps) {
                 className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
                 onClick={closeAllMenus}
               >
-                Estrategia NQ
+                Estrategia MNQ
               </Link>
               <Link
                 href="/manuales/SP500-1"
@@ -402,13 +395,6 @@ export default function Navbar({ portfolios }: NavbarProps) {
                 onClick={closeAllMenus}
               >
                 Estrategia MES
-              </Link>
-              <Link
-                href="/manuales/SP500-2"
-                className="block text-white hover:text-gray-300 px-3 py-2 rounded-md text-base font-medium pl-6"
-                onClick={closeAllMenus}
-              >
-                Estrategia ES
               </Link>
             </div>
 

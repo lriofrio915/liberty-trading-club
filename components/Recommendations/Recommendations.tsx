@@ -159,7 +159,7 @@ export default function Recommendations({
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mt-8 text-gray-900">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-bold text-gray-800">Recomendaciones</h3>
+        <h3 className="text-xl font-bold text-gray-800">Oportunidades</h3>
         <button
           onClick={handleRefreshPrices}
           disabled={isRefreshing}

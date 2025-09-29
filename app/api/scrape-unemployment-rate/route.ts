@@ -30,70 +30,73 @@ export async function GET() {
     let actualValue: number | null = null;
     let forecastValue: number | null = null;
 
-    // Obtener todo el texto del cuerpo de la página para buscar los valores
-    const pageText = $("body").text();
-    // Para depuración: console.log("Texto completo de la página (primeros 500 caracteres):", pageText.substring(0, 500));
+    // Lógica 1: Extracción directa de la clase .actual-value
+    const actualValueElement = $(".actual-value").first().text().trim();
+    if (actualValueElement) {
+      actualValue = parseFloat(
+        actualValueElement.replace("%", "").replace(",", ".")
+      );
+    }
 
-    // Expresión regular para encontrar el valor actual de la tasa de desempleo:
-    // Busca "unemployment rate rose slightly to X%"
-    const actualMatch = pageText.match(
-      /unemployment rate (?:rose slightly to|was)\s+([\d.]+?)%/i
-    );
-    if (actualMatch && actualMatch[1]) {
-      actualValue = parseFloat(actualMatch[1]);
-      // Para depuración: console.log("Actual Match (Unemployment Rate):", actualMatch[1], "Parsed:", actualValue);
+    // Lógica 2: Fallback buscando en el texto de la página
+    if (actualValue === null) {
+      const pageText = $("body").text();
+      const actualMatch = pageText.match(
+        /unemployment rate (?:rose to|was|stood at|reached)\s+([\d.]+?)%/i
+      );
+      if (actualMatch && actualMatch[1]) {
+        actualValue = parseFloat(actualMatch[1]);
+      }
+    }
+
+    // Lógica 3: Buscar en la tabla como último recurso si las otras fallan
+    if (actualValue === null) {
+      $(".table-responsive .table-hover tbody tr").each((i, el) => {
+        const variableName = $(el).find("td a").first().text().trim();
+        if (variableName.includes("Unemployment Rate")) {
+          const values = $(el)
+            .find("td")
+            .map((j, td) => $(td).text().trim())
+            .get();
+          if (values[1]) {
+            actualValue = parseFloat(
+              values[1].replace("%", "").replace(",", ".")
+            );
+          }
+          if (values[2]) {
+            forecastValue = parseFloat(
+              values[2].replace("%", "").replace(",", ".")
+            );
+          }
+          return false;
+        }
+      });
     }
 
     // Lógica para encontrar la previsión:
-    // Si dice "aligning with market expectations" y ya tenemos el valor actual, la previsión es la misma
+    const pageText = $("body").text();
     if (
       actualValue !== null &&
       pageText.includes("aligning with market expectations")
     ) {
       forecastValue = actualValue;
-      // Para depuración: console.log("Forecast Match (Unemployment Rate - Aligning):", forecastValue);
     } else {
-      // Fallback para buscar una previsión explícita si la frase anterior no está presente
-      // Esto podría ser útil si la frase cambia o si hay un número de previsión directo.
       const forecastExplicitMatch = pageText.match(
         /(?:market expectations of|forecasts of)\s+a\s+([\d.]+?)%/i
       );
       if (forecastExplicitMatch && forecastExplicitMatch[1]) {
         forecastValue = parseFloat(forecastExplicitMatch[1]);
-        // Para depuración: console.log("Forecast Match (Unemployment Rate - Explicit):", forecastExplicitMatch[1], "Parsed:", forecastValue);
       }
     }
-
-    // Fallback para buscar en tablas si las expresiones regulares no encuentran los valores
-    $(".table-responsive .table-hover tbody tr").each((i, el) => {
-      const variableName = $(el).find("td a").first().text().trim();
-      if (variableName.includes("Unemployment Rate")) {
-        const values = $(el)
-          .find("td")
-          .map((j, td) => $(td).text().trim())
-          .get();
-        if (values[1] && actualValue === null) {
-          actualValue = parseFloat(
-            values[1].replace("%", "").replace(",", ".")
-          );
-        }
-        if (values[2] && forecastValue === null) {
-          forecastValue = parseFloat(
-            values[2].replace("%", "").replace(",", ".")
-          );
-        }
-        return false;
-      }
-    });
 
     if (actualValue === null || forecastValue === null) {
       console.warn(
         "No se pudieron encontrar ambos valores (actual y previsión) para la Tasa de Desempleo."
       );
-      return NextResponse.json<ScrapedData>( // Tipado explícito de la respuesta
+      return NextResponse.json<ScrapedData>(
         {
           error: "No se pudieron extraer los datos de Tasa de Desempleo.",
-          variable: "Tasa de Desempleo", // Proporcionar todas las propiedades de ScrapedData
+          variable: "Tasa de Desempleo",
           actualValue: null,
           forecastValue: null,
         },
@@ -102,22 +105,20 @@ export async function GET() {
     }
 
     return NextResponse.json<ScrapedData>({
-      // Tipado explícito de la respuesta
       variable: "Tasa de Desempleo",
       actualValue,
       forecastValue,
     });
   } catch (error: unknown) {
-    // Cambiado 'any' a 'unknown'
-    const errorMessage = error instanceof Error ? error.message : String(error); // Manejo seguro del tipo 'unknown'
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
       "Error al hacer scraping de Tasa de Desempleo:",
       errorMessage
     );
-    return NextResponse.json<ScrapedData>( // Tipado explícito de la respuesta
+    return NextResponse.json<ScrapedData>(
       {
         error: `Fallo al obtener datos de Tasa de Desempleo: ${errorMessage}`,
-        variable: "Tasa de Desempleo", // Proporcionar todas las propiedades de ScrapedData
+        variable: "Tasa de Desempleo",
         actualValue: null,
         forecastValue: null,
       },
