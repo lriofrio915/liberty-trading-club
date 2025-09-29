@@ -11,7 +11,6 @@ import {
   ChevronUpIcon,
   Cog6ToothIcon,
   FolderOpenIcon,
-  PlusCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Portfolio } from "@/types/api";
 import AddPortfolioForm from "@/components/AddPortfolioForm/AddPortfolioForm"; // Asegúrate de que la ruta sea correcta
@@ -61,11 +60,6 @@ export default function Navbar({ portfolios }: NavbarProps) {
     setOpenSubDropdown(
       openSubDropdown === subDropdownName ? null : subDropdownName
     );
-  };
-
-  const handleOpenForm = () => {
-    closeAllMenus();
-    setIsFormOpen(true);
   };
 
   const handleCloseForm = () => {

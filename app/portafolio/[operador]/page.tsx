@@ -20,7 +20,39 @@ import {
 } from "@/app/actions/portfolioActions";
 import { Portfolio as PortfolioType } from "@/types/api";
 
-// Definimos la interfaz para los datos de cada activo
+// --- 1. Definición de Interfaces Específicas para la API de Yahoo ---
+
+interface YahooApiStockPriceData {
+  longName?: string | null;
+  symbol?: string | null;
+  regularMarketPrice?: number | null;
+  regularMarketChangePercent?: number | null;
+}
+
+interface YahooApiAssetProfile {
+  sector?: string | null;
+  industry?: string | null;
+}
+
+interface StockApiItem {
+  ticker: string;
+  data: {
+    price?: YahooApiStockPriceData;
+    assetProfile?: YahooApiAssetProfile;
+    // Omitimos otros módulos para simplificar, pero estos son los usados
+  };
+  error?: string;
+}
+
+interface StockApiResponse {
+  success: boolean;
+  message?: string;
+  data: StockApiItem[];
+}
+
+// --- 2. Interfaces de Componente ---
+
+// Definimos la interfaz para los datos de cada activo (usada para el estado local)
 interface AssetData {
   ticker: string;
   name: string;
@@ -31,15 +63,16 @@ interface AssetData {
   error?: string;
 }
 
-// Interfaz para la estructura del portafolio
-interface Portfolio extends PortfolioType {}
+// FIX: Eliminada la interfaz vacía 'Portfolio extends PortfolioType {}'
+// Ahora usamos PortfolioType directamente.
 
 export default function PortfolioPage() {
   const params = useParams();
   const router = useRouter();
   const operadorSlug = params.operador as string;
 
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+  // Usamos PortfolioType directamente
+  const [portfolio, setPortfolio] = useState<PortfolioType | null>(null);
   const [currentTickers, setCurrentTickers] = useState<string[]>([]);
   const [assets, setAssets] = useState<AssetData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -62,13 +95,19 @@ export default function PortfolioPage() {
       } else {
         setError("Portafolio no encontrado.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      // FIX: Manejo de error usando 'unknown'
       console.error("Error al cargar el portafolio:", err);
-      setError(err.message || "Error al cargar los datos del portafolio.");
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Error al cargar los datos del portafolio.";
+      setError(message);
     } finally {
-      setLoading(false);
+      // El loading se mantiene si hay tickers para la siguiente fase (fetchPortfolioData)
+      if (currentTickers.length === 0) setLoading(false);
     }
-  }, [operadorSlug]);
+  }, [operadorSlug, currentTickers.length]);
 
   useEffect(() => {
     loadInitialData();
@@ -76,24 +115,25 @@ export default function PortfolioPage() {
 
   // Función para obtener los datos de todos los tickers (API Yahoo)
   const fetchPortfolioData = useCallback(async () => {
-    // Si la lista de tickers cambió, mostramos el loading de la tabla
-    if (currentTickers.length > 0) setLoading(true);
+    if (currentTickers.length === 0) {
+      setAssets([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     setError(null);
 
     try {
-      if (currentTickers.length === 0) {
-        setAssets([]);
-        setLoading(false);
-        return;
-      }
-
       const tickersString = currentTickers.join(",");
       const response = await fetch(`/api/stocks?tickers=${tickersString}`);
 
       if (!response.ok) {
         throw new Error("Fallo al obtener los datos del portafolio.");
       }
-      const apiResponse = await response.json();
+
+      // FIX: Usamos el tipo específico StockApiResponse
+      const apiResponse: StockApiResponse = await response.json();
 
       if (apiResponse.success === false) {
         throw new Error(
@@ -102,24 +142,30 @@ export default function PortfolioPage() {
         );
       }
 
-      const fetchedAssets = apiResponse.data.map((item: any) => {
-        const priceData = item.data?.price;
-        const assetProfileData = item.data?.assetProfile;
-        const name = priceData?.longName || priceData?.symbol || item.ticker;
-        const sector = assetProfileData?.sector || "N/A";
-        const industry = assetProfileData?.industry || "N/A";
-        const price = priceData?.regularMarketPrice ?? null;
-        const dailyChange = priceData?.regularMarketChangePercent ?? null;
+      // FIX: Mapeo tipado
+      const fetchedAssets: AssetData[] = apiResponse.data.map(
+        (item: StockApiItem) => {
+          const priceData = item.data?.price;
+          const assetProfileData = item.data?.assetProfile;
 
-        return {
-          ticker: item.ticker,
-          name: name,
-          sector: sector,
-          industry: industry,
-          price: price,
-          dailyChange: dailyChange,
-        };
-      });
+          const name = priceData?.longName || priceData?.symbol || item.ticker;
+          const sector = assetProfileData?.sector || "N/A";
+          const industry = assetProfileData?.industry || "N/A";
+
+          // Uso de coalescencia para asegurar el tipo number | null
+          const price = priceData?.regularMarketPrice ?? null;
+          const dailyChange = priceData?.regularMarketChangePercent ?? null;
+
+          return {
+            ticker: item.ticker,
+            name: name,
+            sector: sector,
+            industry: industry,
+            price: price,
+            dailyChange: dailyChange,
+          };
+        }
+      );
 
       setAssets(fetchedAssets);
     } catch (err: unknown) {
@@ -145,7 +191,6 @@ export default function PortfolioPage() {
   }, [portfolio, currentTickers, fetchPortfolioData]);
 
   const sortedAssets = useMemo(() => {
-    // ... (Lógica de ordenamiento se mantiene)
     const sortableAssets = [...assets];
     if (sortBy === "sector") {
       return sortableAssets.sort((a, b) => {
@@ -200,7 +245,8 @@ export default function PortfolioPage() {
     const validationResponse = await fetch(
       `/api/stocks?tickers=${tickerToAdd}`
     );
-    const validationData = await validationResponse.json();
+    // FIX: Usamos el tipo StockApiResponse
+    const validationData: StockApiResponse = await validationResponse.json();
 
     if (
       !validationData.success ||
@@ -222,8 +268,13 @@ export default function PortfolioPage() {
       // de datos de Yahoo en el siguiente ciclo.
       setCurrentTickers((prev) => [...prev, tickerToAdd]);
       setNewTickerInput("");
-    } catch (e: any) {
-      setError(e.message || "Fallo al guardar el ticker en la base de datos.");
+    } catch (e: unknown) {
+      // FIX: Manejo de error tipado
+      const message =
+        e instanceof Error
+          ? e.message
+          : "Fallo al guardar el ticker en la base de datos.";
+      setError(message);
     } finally {
       setAddingTicker(false);
     }
@@ -241,8 +292,13 @@ export default function PortfolioPage() {
       setAssets((prevAssets) =>
         prevAssets.filter((asset) => asset.ticker !== tickerToDelete)
       );
-    } catch (e: any) {
-      setError(e.message || "Fallo al eliminar el ticker de la base de datos.");
+    } catch (e: unknown) {
+      // FIX: Manejo de error tipado
+      const message =
+        e instanceof Error
+          ? e.message
+          : "Fallo al eliminar el ticker de la base de datos.";
+      setError(message);
     }
   };
 
@@ -263,10 +319,13 @@ export default function PortfolioPage() {
 
       // 2. Redirigir a la página principal (la acción ya revalida el navbar)
       router.push("/portafolio"); // Redirigimos a la página de gestión
-    } catch (e: any) {
-      setError(
-        e.message || "Fallo al eliminar el portafolio de la base de datos."
-      );
+    } catch (e: unknown) {
+      // FIX: Manejo de error tipado
+      const message =
+        e instanceof Error
+          ? e.message
+          : "Fallo al eliminar el portafolio de la base de datos.";
+      setError(message);
       setDeletingPortfolio(false);
       closeDeleteConfirmModal();
     }
