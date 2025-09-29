@@ -1,13 +1,15 @@
+// components/AddPortfolioForm/AddPortfolioForm.tsx
 "use client";
 
 import { useState, FormEvent, RefObject } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { createPortfolio } from "@/app/actions/portfolioActions"; // ¡Importa la Server Action!
+import { createPortfolio } from "@/app/actions/portfolioActions";
 import { useRouter } from "next/navigation";
 
 interface AddPortfolioFormProps {
   onClose: () => void;
-  onPortfolioAdded: () => void; // Ya no necesita recibir el portafolio
+  // Llama a esta función para forzar la actualización del Navbar
+  onPortfolioAdded: () => void;
   formRef: RefObject<HTMLDivElement | null>;
 }
 
@@ -33,8 +35,14 @@ const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
       .map((t) => t.trim().toUpperCase())
       .filter((t) => t !== "");
 
+    if (tickersArray.length === 0) {
+      setError("Debe ingresar al menos un ticker.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      // Llama a la Server Action
+      // 1. Llama a la Server Action para crear el portfolio en MongoDB
       const newPortfolio = await createPortfolio({
         nombre,
         apellido,
@@ -42,9 +50,12 @@ const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
         tickers: tickersArray,
       });
 
+      // 2. Notifica al Navbar que hubo un cambio (forzará la revalidación)
       onPortfolioAdded();
-      // Opcional: redirige al nuevo portafolio
+
+      // 3. Redirige al nuevo portafolio y cierra el modal
       router.push(`/portafolio/${newPortfolio.slug}`);
+      onClose();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Error al crear el portafolio."
@@ -58,17 +69,16 @@ const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
     <div className="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center p-4">
       <div
         ref={formRef}
-        className="bg-white text-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md relative border"
+        className="bg-white text-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md relative border border-gray-200"
       >
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-900"
+          className="absolute top-2 right-2 text-gray-500 hover:text-gray-900 transition-colors"
         >
           <XMarkIcon className="h-6 w-6" />
         </button>
         <h2 className="text-2xl font-bold mb-4">Agregar Nuevo Portafolio</h2>
         <form onSubmit={handleSubmit}>
-          {/* ... tus inputs de nombre, apellido, tickers ... */}
           <div className="mb-4">
             <label
               htmlFor="nombre"
@@ -81,7 +91,7 @@ const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
               id="nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-gray-900 px-3 py-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-gray-900 px-3 py-2"
               required
             />
           </div>
@@ -97,7 +107,7 @@ const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
               id="apellido"
               value={apellido}
               onChange={(e) => setApellido(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-gray-900 px-3 py-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-gray-900 px-3 py-2"
               required
             />
           </div>
@@ -113,7 +123,7 @@ const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
               id="tickers"
               value={tickers}
               onChange={(e) => setTickers(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-gray-900 px-3 py-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-gray-900 px-3 py-2"
               placeholder="Ej: AAPL, TSLA, GOOG"
               required
             />
@@ -123,7 +133,7 @@ const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
           <div className="flex justify-end space-x-2 mt-4">
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 disabled:bg-gray-400"
+              className="px-6 py-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-400"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Creando..." : "Crear Portafolio"}

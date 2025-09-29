@@ -1,3 +1,4 @@
+// components/Navbar.tsx
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -10,8 +11,10 @@ import {
   ChevronUpIcon,
   Cog6ToothIcon,
   FolderOpenIcon,
+  PlusCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Portfolio } from "@/types/api";
+import AddPortfolioForm from "@/components/AddPortfolioForm/AddPortfolioForm"; // Asegúrate de que la ruta sea correcta
 
 // 1. Definimos las props que recibirá el Navbar desde el layout.
 interface NavbarProps {
@@ -23,24 +26,35 @@ export default function Navbar({ portfolios }: NavbarProps) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [openSubDropdown, setOpenSubDropdown] = useState<string | null>(null);
   const [isCoursesModalOpen, setIsCoursesModalOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "", phone: "" });
 
   const navbarRef = useRef<HTMLDivElement>(null);
   const coursesModalRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
-  // 2. Se elimina el `useEffect` que leía de localStorage.
-  // Los datos ahora se reciben directamente a través de las props.
+  // Helper para forzar la revalidación (usado después de crear un portfolio)
+  const handlePortfolioAdded = () => {
+    // Forzamos un soft refresh para que Next.js re-ejecute getPortfolios en el layout.
+    // Esto es NECESARIO para que el Navbar (Client Component) muestre el nuevo portfolio.
+    window.location.reload();
+  };
 
   const closeAllMenus = useCallback(() => {
     setIsMobileMenuOpen(false);
     setOpenDropdown(null);
     setOpenSubDropdown(null);
     setIsCoursesModalOpen(false);
+    setIsFormOpen(false);
   }, []);
 
   const toggleDropdown = (dropdownName: string) => {
     setOpenDropdown(openDropdown === dropdownName ? null : dropdownName);
     setOpenSubDropdown(null);
+    // Cierra el formulario si se abre otro menú
+    if (dropdownName !== "portafolios") {
+      setIsFormOpen(false);
+    }
   };
 
   const toggleSubDropdown = (subDropdownName: string) => {
@@ -49,14 +63,26 @@ export default function Navbar({ portfolios }: NavbarProps) {
     );
   };
 
+  const handleOpenForm = () => {
+    closeAllMenus();
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
       if (
-        navbarRef.current &&
-        !navbarRef.current.contains(event.target as Node)
+        (navbarRef.current && navbarRef.current.contains(target)) ||
+        (coursesModalRef.current && coursesModalRef.current.contains(target)) ||
+        (formRef.current && formRef.current.contains(target))
       ) {
-        closeAllMenus();
+        return;
       }
+      closeAllMenus();
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -64,11 +90,11 @@ export default function Navbar({ portfolios }: NavbarProps) {
 
   useEffect(() => {
     document.body.style.overflow =
-      isMobileMenuOpen || isCoursesModalOpen ? "hidden" : "";
+      isMobileMenuOpen || isCoursesModalOpen || isFormOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isMobileMenuOpen, isCoursesModalOpen]);
+  }, [isMobileMenuOpen, isCoursesModalOpen, isFormOpen]);
 
   // Funciones del modal de cursos
   const openCoursesModal = () => {
@@ -233,6 +259,7 @@ export default function Navbar({ portfolios }: NavbarProps) {
               </button>
               {openDropdown === "portafolios" && (
                 <div className="absolute top-full left-0 mt-2 w-48 bg-[#1A3A5E] rounded-md shadow-lg py-1 z-10">
+                  {/* Botón Gestionar (ir a la lista de portafolios para crear/eliminar) */}
                   <Link
                     href="/portafolio"
                     className="flex items-center w-full px-4 py-2 text-sm text-white hover:bg-[#2A4A7E]"
@@ -506,6 +533,14 @@ export default function Navbar({ portfolios }: NavbarProps) {
           </div>
         )}
       </nav>
+      {/* El formulario AddPortfolioForm ahora está fuera del Navbar, posiblemente en el layout */}
+      {isFormOpen && (
+        <AddPortfolioForm
+          onClose={handleCloseForm}
+          onPortfolioAdded={handlePortfolioAdded}
+          formRef={formRef}
+        />
+      )}
     </>
   );
 }
