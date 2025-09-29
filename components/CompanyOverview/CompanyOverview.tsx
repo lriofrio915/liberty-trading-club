@@ -1,9 +1,8 @@
+// components/CompanyOverview/CompanyOverview.tsx
 "use client";
 
-import { useState, useEffect } from "react";
 import { ApiAssetItem } from "@/types/api";
 import DataListItem from "../Shared/DataListItem";
-import { translateText } from "../../app/actions/translateActions";
 import NetIncomeChart from "../NetIncomeChart/NetIncomeChart";
 import TotalRevenueChart from "../TotalRevenueChart/TotalRevenueChart";
 
@@ -14,34 +13,6 @@ interface CompanyOverviewProps {
 export default function CompanyOverview({ assetData }: CompanyOverviewProps) {
   const { price, assetProfile } = assetData.data;
   const companyName = price?.longName || assetData.ticker;
-  const [translatedSummary, setTranslatedSummary] = useState<string>("");
-  const [isTranslating, setIsTranslating] = useState(false);
-  const [translationError, setTranslationError] = useState<string>("");
-
-  useEffect(() => {
-    const translateBusinessSummary = async () => {
-      const summaryText = assetProfile?.longBusinessSummary;
-      if (summaryText) {
-        setIsTranslating(true);
-        setTranslationError("");
-
-        const result = await translateText(summaryText, "es");
-
-        if (result.translatedText) {
-          setTranslatedSummary(result.translatedText);
-        } else {
-          console.error("Error traduciendo:", result.error);
-          setTranslationError(
-            "Error en la traducción. Mostrando texto original."
-          );
-          setTranslatedSummary(summaryText);
-        }
-        setIsTranslating(false);
-      }
-    };
-
-    translateBusinessSummary();
-  }, [assetProfile?.longBusinessSummary]);
 
   if (!assetProfile && !price) {
     return (
@@ -60,7 +31,6 @@ export default function CompanyOverview({ assetData }: CompanyOverviewProps) {
         1. Visión General de la Empresa
       </h2>
 
-      {/* --- INICIO DE LA ESTRUCTURA ACTUALIZADA --- */}
       <div className="flex flex-col gap-8">
         {/* Fila 1: Descripción de la empresa (ocupa todo el ancho) */}
         <div>
@@ -68,24 +38,7 @@ export default function CompanyOverview({ assetData }: CompanyOverviewProps) {
             Acerca de {companyName}
           </h3>
 
-          {translationError && (
-            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
-              <p>{translationError}</p>
-            </div>
-          )}
-
-          {isTranslating ? (
-            <div className="animate-pulse space-y-2 mb-4">
-              <div className="h-4 bg-gray-200 rounded"></div>
-              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-              <div className="h-4 bg-gray-200 rounded w-4/6"></div>
-            </div>
-          ) : translatedSummary ? (
-            <p className="text-gray-700 leading-relaxed mb-4">
-              <span className="font-semibold">Descripción:</span>{" "}
-              <span className="highlight-api">{translatedSummary}</span>
-            </p>
-          ) : assetProfile?.longBusinessSummary ? (
+          {assetProfile?.longBusinessSummary ? (
             <p className="text-gray-700 leading-relaxed mb-4">
               <span className="font-semibold">Descripción:</span>{" "}
               <span className="highlight-api">
@@ -148,7 +101,6 @@ export default function CompanyOverview({ assetData }: CompanyOverviewProps) {
           </div>
         </div>
       </div>
-      {/* --- FIN DE LA ESTRUCTURA ACTUALIZADA --- */}
     </section>
   );
 }
