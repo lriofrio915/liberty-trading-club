@@ -11,13 +11,12 @@ interface CompanyOverviewProps {
 
 export default function CompanyOverview({ assetData }: CompanyOverviewProps) {
   const { price, assetProfile } = assetData.data;
-  const companyName = price?.longName || assetData.ticker;
 
   if (!assetProfile && !price) {
     return (
       <section className="bg-white rounded-lg shadow-xl p-6 md:p-8 mb-12">
         <h2 className="text-3xl font-bold text-center text-[#0A2342] mb-8">
-          1. Visión General de la Empresa
+          Visión General de la Empresa
         </h2>
         <p className="text-center text-gray-500">Información no disponible</p>
       </section>
@@ -27,7 +26,7 @@ export default function CompanyOverview({ assetData }: CompanyOverviewProps) {
   return (
     <section className="bg-white rounded-lg shadow-xl p-6 md:p-8 mb-12">
       <h2 className="text-3xl font-bold text-center text-[#0A2342] mb-8">
-        1. Visión General de la Empresa
+        Visión General de la Empresa
       </h2>
 
       <div className="flex flex-col gap-8">
