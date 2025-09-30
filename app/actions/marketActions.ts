@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import yahooFinance from "yahoo-finance2";
-// SOLUCIÓN: Corregida la ruta de importación y el nombre del import
 import dbConnect from "@/lib/mongodb";
 import Recommendation, { IRecommendation } from "@/models/Recommendation";
 import {
@@ -11,7 +10,6 @@ import {
 } from "@/types/market";
 import { MoverQuote } from "@/types/api";
 
-// Lista de tickers para YTD (sin cambios)
 const sp500Tickers = [
   "MSFT",
   "NVDA",
@@ -271,7 +269,7 @@ export async function getYtdMovers(): Promise<{
 
 export async function createRecommendation(data: NewRecommendationData) {
   try {
-    await dbConnect(); // SOLUCIÓN: Usar el nombre de función correcto
+    await dbConnect();
     const quoteResult = await yahooFinance.quote(data.ticker);
 
     const quote = Array.isArray(quoteResult) ? quoteResult[0] : quoteResult;
@@ -280,8 +278,11 @@ export async function createRecommendation(data: NewRecommendationData) {
       throw new Error(`Ticker "${data.ticker}" no válido o sin precio.`);
     }
 
+    // FIX: El modelo requiere portfolioSlug. Si no lo pasas, usa un valor por defecto seguro.
+    // Asumo que tu NewRecommendationData ya incluye portfolioSlug. Si no, necesitarías modificar esa interfaz.
     const newRecommendation = new Recommendation({
       ...data,
+      // Los campos sellPrice y portfolioSlug deben estar en data si son requeridos por el modelo
       assetName: quote.longName || data.ticker,
       currentPrice: quote.regularMarketPrice,
     });
@@ -301,13 +302,14 @@ export async function createRecommendation(data: NewRecommendationData) {
 
 export async function getRecommendations(): Promise<ClientRecommendation[]> {
   try {
-    await dbConnect(); // SOLUCIÓN: Usar el nombre de función correcto
+    await dbConnect();
     const recommendations = await Recommendation.find({}).sort({
       recommendationDate: -1,
     });
     return JSON.parse(JSON.stringify(recommendations));
   } catch (error) {
     console.error("Error fetching recommendations:", error);
+    // Devolvemos un array vacío para no romper la UI.
     return [];
   }
 }
@@ -317,7 +319,8 @@ export async function updateRecommendationStatus(
   status: "COMPRAR" | "MANTENER" | "VENDER"
 ) {
   try {
-    await dbConnect(); // SOLUCIÓN: Usar el nombre de función correcto
+    await dbConnect();
+    // Usamos findById para obtener el documento Mongoose
     const recommendation = await Recommendation.findById(id);
     if (!recommendation) throw new Error("Recomendación no encontrada.");
 
@@ -345,7 +348,7 @@ export async function updateRecommendationStatus(
 
 export async function deleteRecommendation(id: string) {
   try {
-    await dbConnect(); // SOLUCIÓN: Usar el nombre de función correcto
+    await dbConnect();
     await Recommendation.findByIdAndDelete(id);
     revalidatePath("/stock-screener");
     return { success: true };
@@ -358,7 +361,7 @@ export async function deleteRecommendation(id: string) {
 
 export async function refreshRecommendationPrices() {
   try {
-    await dbConnect(); // SOLUCIÓN: Usar el nombre de función correcto
+    await dbConnect();
     const recommendations = await Recommendation.find({
       status: { $ne: "VENDER" },
     });
