@@ -13,12 +13,6 @@ import { ApiAssetItem } from "@/types/api";
 export async function generateValueInvestingAnalysis(
   assetData: ApiAssetItem
 ): Promise<string> {
-  // --- CONSOLE LOGS PARA DEBUG ---
-  console.log("--- DEBUG: Datos de entrada para el análisis (assetData) ---");
-  console.log(assetData);
-  console.log("---------------------------------------------------------");
-  // --- FIN CONSOLE LOGS PARA DEBUG ---
-
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -42,11 +36,6 @@ export async function generateValueInvestingAnalysis(
     month: "long",
     year: "numeric",
   });
-
-  // --- CONSOLE LOG PARA DEBUG DE LA FECHA ---
-  console.log(`--- DEBUG: Fecha del informe: ${currentDate} ---`);
-  // --- FIN CONSOLE LOG PARA DEBUG DE LA FECHA ---
-
   // --- ✨ 2. INCLUIR LA FECHA EN EL PROMPT ---
   const prompt = `Eres un analista financiero de élite, especializado en "value investing" y gestión de riesgos, entrenado con las filosofías de Warren Buffett, Charlie Munger y Peter Lynch. Tu tarea es analizar los datos de la empresa con ticker "${assetData.ticker}" y redactar un informe fundamental conciso y profundo para un gestor de portafolios.
 
