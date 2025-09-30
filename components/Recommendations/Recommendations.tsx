@@ -16,6 +16,10 @@ import {
   NewRecommendationData,
 } from "@/types/market";
 
+// Para solucionar el error 170:15 (Warning: 'result' is assigned a value but never used)
+// En las Server Actions que devuelven { success: true } y no un objeto específico,
+// podemos ignorar la variable 'result' si la destructuramos correctamente al verificar el error.
+
 // Props para el componente principal
 interface RecommendationsProps {
   recommendations: Recommendation[]; // La lista actual
@@ -29,6 +33,13 @@ interface NewRecommendationFormProps {
   onSuccess: () => void; // Callback para notificar el éxito
 }
 
+// --- Tipo de Retorno para acciones de CRUD (implícito en tu código) ---
+interface ActionResponse {
+  success?: boolean;
+  error?: string;
+  updated?: number; // Usado por refreshRecommendationPrices
+}
+
 // --- SUB-COMPONENTE FORMULARIO ---
 function NewRecommendationForm({
   setError,
@@ -38,16 +49,17 @@ function NewRecommendationForm({
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleSubmit = async (formData: FormData) => {
-    // FIXME: El tipo NewRecommendationData DEBE incluir portfolioSlug: string
-    // Por ahora, usamos 'as any' para evitar el error de TS temporalmente.
-    const data: NewRecommendationData & { portfolioSlug: string } = {
+    // FIX: El tipo NewRecommendationData DEBE incluir portfolioSlug y sellPrice (opcionales)
+    // Asumiendo que has actualizado tu tipo NewRecommendationData en '@/types/market'
+    // para incluir los campos 'portfolioSlug' y 'sellPrice?: null', procedemos:
+    const data: NewRecommendationData = {
       ticker: (formData.get("ticker") as string).toUpperCase(),
       buyPrice: parseFloat(formData.get("buyPrice") as string),
       targetPrice: parseFloat(formData.get("targetPrice") as string),
       responsible: formData.get("responsible") as string,
-      portfolioSlug: "default", // Valor por defecto ya que no está en el formulario
-      sellPrice: null, // Asumimos null al crear
-    } as any; // Usamos 'as any' para forzar la compilación del campo portfolioSlug
+      portfolioSlug: "default", // Valor por defecto
+      sellPrice: null,
+    } as NewRecommendationData; // Usamos as NewRecommendationData, asumiendo que los tipos ahora coinciden.
 
     if (
       !data.ticker ||
@@ -61,9 +73,11 @@ function NewRecommendationForm({
 
     startTransition(async () => {
       setError(null);
-      const result = await createRecommendation(data);
-      // CORRECCIÓN TS: Verificamos si 'error' existe en el objeto retornado
-      if ("error" in result && result.error) {
+      // FIX: Tipamos la respuesta como ActionResponse
+      const result: ActionResponse = await createRecommendation(data);
+
+      // Corregida la verificación de error
+      if (result.error) {
         setError(result.error);
       } else {
         formRef.current?.reset();
@@ -134,11 +148,14 @@ export default function Recommendations({
     setPendingUpdateIds((prev) => [...prev, id]);
 
     startTransition(async () => {
-      const result = await updateRecommendationStatus(id, newStatus);
+      // FIX: Tipamos la respuesta como ActionResponse
+      const result: ActionResponse = await updateRecommendationStatus(
+        id,
+        newStatus
+      );
       setPendingUpdateIds((prev) => prev.filter((pid) => pid !== id));
 
-      // CORRECCIÓN TS: Verificamos si 'error' existe en el objeto retornado
-      if ("error" in result && result.error) {
+      if (result.error) {
         alert(result.error);
       } else {
         fetchRecommendations(); // Recarga la lista después de la actualización
@@ -151,11 +168,12 @@ export default function Recommendations({
       setPendingUpdateIds((prev) => [...prev, id]);
 
       startTransition(async () => {
-        const result = await deleteRecommendation(id);
+        // FIX: Tipamos la respuesta como ActionResponse
+        const result: ActionResponse = await deleteRecommendation(id);
         setPendingUpdateIds((prev) => prev.filter((pid) => pid !== id));
 
-        // CORRECCIÓN TS: Verificamos si 'error' existe en el objeto retornado
-        if ("error" in result && result.error) {
+        // CORRECCIÓN ESLINT: `result` ahora se usa para verificar el error.
+        if (result.error) {
           alert(result.error);
         } else {
           fetchRecommendations(); // Recarga la lista después de la eliminación
@@ -167,15 +185,14 @@ export default function Recommendations({
   const handleRefreshPrices = () => {
     startRefreshTransition(async () => {
       try {
-        const result = await refreshRecommendationPrices();
-        // CORRECCIÓN TS: Si la función solo retorna { success: boolean, updated: number },
-        // NO tiene la propiedad 'error'. El manejo de errores debe ser más robusto.
-        // Asumiendo que SÓLO falla con una excepción, el try/catch es la mejor opción.
-      } catch (e: any) {
-        // En caso de fallo de la server action (excepción), mostramos el error.
-        alert(e.message || "Error al actualizar precios.");
+        // FIX: La Server Action lanza un error en caso de fallo, por eso la envolvemos en try/catch.
+        await refreshRecommendationPrices();
+      } catch (e: unknown) {
+        // FIX: Reemplazamos any por unknown
+        const err = e as Error;
+        alert(err.message || "Error al actualizar precios.");
       }
-      fetchRecommendations(); // Recarga la lista después de actualizar precios
+      fetchRecommendations(); // Recarga la lista después de actualizar precios (tanto si falla como si tiene éxito)
     });
   };
 
