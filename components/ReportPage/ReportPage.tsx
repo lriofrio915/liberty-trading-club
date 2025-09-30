@@ -1,89 +1,30 @@
 // components/ReportPage/ReportPage.tsx
 "use client";
 
-import { useState, useEffect, useCallback, useTransition } from "react";
-import { ApiAssetItem, YahooFinanceRawValue } from "@/types/api";
-import {
-  ValuationMetrics,
-  ValuationResult,
-  ValuationResults,
-} from "@/types/valuation";
-import {
-  getValuationMultiples,
-  getFinancialAverages,
-  calculateIntrinsicValue,
-} from "@/app/actions/valuationActions";
+import { useState, useEffect, useCallback } from "react";
+import { ApiAssetItem } from "@/types/api";
 import CompanyOverview from "../CompanyOverview/CompanyOverview";
-import MarketAnalysis from "../MarketAnalysis/MarketAnalysis";
 import PerformanceChart from "../PerformanceChart/PerformanceChart";
-import DividendsSection from "../DividendsSection/DividendsSection";
-import FinancialHealth from "../FinancialHealth/FinancialHealth";
-import Profitability from "../Profitability/Profitability";
-import AnalystPerspectives from "../AnalystPerspectives/AnalystPerspectives";
-import Conclusion from "../Conclusion/Conclusion";
 import LoadingSpinner from "../Shared/LoadingSpinner";
 import ErrorDisplay from "../Shared/ErrorDisplay";
-import ValuationDashboard from "../ValuationDashboard/ValuationDashboard";
 import ScrollToTopButton from "../ScrollToTopButton";
 import GeminiAnalysis from "../GeminiAnalysis/GeminiAnalysis";
-// import GeminiAnalysis from "../GeminiAnalysis/GeminiAnalysis";
-
-interface FinancialAverages {
-  salesGrowth: string;
-  ebitMargin: string;
-  taxRate: string;
-  sharesIncrease: string;
-}
-
 interface ReportPageProps {
   ticker: string;
 }
 
-const getRawValue = (
-  value: number | YahooFinanceRawValue | undefined | null
-): number => {
-  if (typeof value === "object" && value !== null && "raw" in value) {
-    return typeof value.raw === "number" ? value.raw : 0;
-  }
-  return typeof value === "number" ? value : 0;
-};
-
 export default function ReportPage({ ticker }: ReportPageProps) {
   const [assetData, setAssetData] = useState<ApiAssetItem | null>(null);
-  const [financialAverages, setFinancialAverages] =
-    useState<FinancialAverages | null>(null);
-  const [valuationMultiples, setValuationMultiples] =
-    useState<ValuationMetrics | null>(null);
-  const [valuationResults, setValuationResults] =
-    useState<ValuationResults | null>(null);
-  const [marginOfSafety, setMarginOfSafety] = useState<string | null>(null);
-  const [cagr, setCagr] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [targets, setTargets] = useState({
-    per: 20,
-    ev_ebitda: 16,
-    ev_ebit: 16,
-    ev_fcf: 20,
-  });
-  const [estimates, setEstimates] = useState({
-    salesGrowth: 12,
-    ebitMargin: 28,
-    taxRate: 21,
-    sharesIncrease: 0.05,
-  });
-  const [isCalculating, startTransition] = useTransition();
 
   const fetchAllData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [assetResponse, multiplesResult, averagesResult] =
-        await Promise.all([
-          fetch(`/api/stocks?tickers=${ticker}&fullData=true`),
-          getValuationMultiples(ticker),
-          getFinancialAverages(ticker),
-        ]);
+      const assetResponse = await fetch(
+        `/api/stocks?tickers=${ticker}&fullData=true`
+      );
 
       if (!assetResponse.ok)
         throw new Error(`Fallo al obtener los datos de ${ticker}.`);
@@ -97,17 +38,6 @@ export default function ReportPage({ ticker }: ReportPageProps) {
         );
       }
 
-      if (multiplesResult.success) {
-        setValuationMultiples(multiplesResult.data);
-      } else {
-        throw new Error(multiplesResult.error);
-      }
-
-      if (averagesResult.success) {
-        setFinancialAverages(averagesResult.averages);
-      } else {
-        throw new Error(averagesResult.error);
-      }
     } catch (err) {
       const error = err as Error;
       setError(error.message);
@@ -122,43 +52,13 @@ export default function ReportPage({ ticker }: ReportPageProps) {
     }
   }, [fetchAllData, ticker]);
 
-  const handleCalculation = () => {
-    if (!ticker || !assetData) return;
-    setError(null);
-    startTransition(async () => {
-      const response = await calculateIntrinsicValue({
-        ticker,
-        targets,
-        estimates,
-      });
-      if (response.success) {
-        setValuationResults(response.results);
-        const finalYear = Object.keys(response.results).pop()!;
-        const finalResults: ValuationResult = response.results[finalYear];
-        const finalAvgPrice =
-          Object.values(finalResults).reduce((s, v) => s + v, 0) / 4;
-        const currentPrice = getRawValue(
-          assetData.data.price?.regularMarketPrice
-        );
-        if (currentPrice > 0) {
-          const mos = ((finalAvgPrice - currentPrice) / currentPrice) * 100;
-          setMarginOfSafety(mos.toFixed(2));
-          const cagrValue =
-            (Math.pow(finalAvgPrice / currentPrice, 5) - 1) * 100; // Corregido a 5 años
-          setCagr(cagrValue);
-        }
-      } else {
-        setError(response.error);
-      }
-    });
-  };
-
   if (loading) return <LoadingSpinner ticker={ticker} />;
   if (error) return <ErrorDisplay error={error} />;
-  if (!assetData || !valuationMultiples || !financialAverages) {
+
+  if (!assetData) {
     return (
       <ErrorDisplay
-        error={`No se pudieron cargar todos los datos necesarios para ${ticker}.`}
+        error={`No se pudieron cargar los datos necesarios para ${ticker}.`}
       />
     );
   }
@@ -181,6 +81,7 @@ export default function ReportPage({ ticker }: ReportPageProps) {
         <CompanyOverview assetData={assetData} />
         <PerformanceChart assetData={assetData} />
         <GeminiAnalysis assetData={assetData} />
+
         <footer className="text-center mt-12 pt-8 border-t border-gray-200">
           <h3 className="font-bold mb-2 text-[#0A2342]">Aviso Legal</h3>
           <p className="text-xs text-[#849E8F] max-w-4xl mx-auto">
