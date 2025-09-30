@@ -588,7 +588,7 @@ export default function PortfolioPage() {
                           </span>
                         ) : (
                           <a
-                            href={`/portafolio/${operadorSlug}/${asset.ticker.toLowerCase()}`}
+                            href={`/stock-screener/${asset.ticker.toLowerCase()}`}
                             className="text-blue-600 hover:text-blue-800 font-medium underline transition-colors duration-200"
                           >
                             Ver más

@@ -51,7 +51,7 @@ export async function generateValueInvestingAnalysis(
   const prompt = `Eres un analista financiero de élite, especializado en "value investing" y gestión de riesgos, entrenado con las filosofías de Warren Buffett, Charlie Munger y Peter Lynch. Tu tarea es analizar los datos de la empresa con ticker "${assetData.ticker}" y redactar un informe fundamental conciso y profundo para un gestor de portafolios.
 
 **INSTRUCCIONES DE FORMATO Y CONSISTENCIA:**
-1.  **Estilización Profesional:** Todas las tablas del informe (Secciones 3 y 4) deben tener un formato visualmente mejorado, profesional y fácil de leer, ideal para un gestor de portafolios. **Asegúrate de que no haya espacios en blanco excesivos antes de las tablas para evitar saltos de página grandes.**
+1.  **Estilización Profesional y Compacta:** Todas las tablas del informe (Secciones 3 y 4) deben tener un formato visualmente mejorado, profesional y fácil de leer. **Utiliza sintaxis de Markdown robusta y elimina TODAS las líneas en blanco innecesarias entre encabezados de lista, el título de la tabla y la tabla misma para asegurar una presentación COMPACTA y sin espacios verticales grandes.**
 2.  **Búsqueda Reforzada (Anti-N/A):** Si los datos de múltiplos proyectados (NTM) para EV/EBITDA, EV/EBIT, o EV/FCF resultan ser 'N/A' a partir de los datos iniciales ('${dataString}'), la IA debe realizar una **búsqueda exhaustiva en la web** para obtener estos valores proyectados antes de generar el informe. Si después de la búsqueda no se encuentran, se mantendrá 'N/A'.
 
 El informe debe tener cuatro secciones claras y usar la fecha de hoy.
@@ -119,7 +119,6 @@ Esta sección tiene como objetivo determinar si la valoración actual de ${asset
 
 2.  **Proyecciones Futuras de Métricas Operacionales:**
     * Crea la siguiente tabla usando datos históricos y proyecciones de eficiencia para el 2026, con **formato estilizado y profesional.**
-
 | Métrica | Promedio Histórico | Estimación 2026e |
 | :--- | :--- | :--- |
 | **Crecimiento de Ventas** | [Insertar Promedio Histórico de Crecimiento de Ventas] | [Insertar Estimación 2026e de Crecimiento de Ventas] |
@@ -129,7 +128,6 @@ Esta sección tiene como objetivo determinar si la valoración actual de ${asset
 
 3.  **Múltiplos de Valoración Comparados (LTM, NTM, Objetivo Sectorial Fijo):**
     * Crea la siguiente tabla, utilizando los valores de los Últimos 12 Meses (LTM), los Próximos 12 Meses (NTM) y el Valor Objetivo FIJO del sector identificado. Si los datos NTM para EV/EBITDA, EV/EBIT o EV/FCF resultan ser 'N/A' de la data inicial, la IA debe realizar una **búsqueda en la web** para encontrar el dato proyectado. Si aún así no se encuentra, se mantiene 'N/A'. Utiliza **formato estilizado y profesional.**
-
 | Múltiplo | Valor LTM | Valor NTM | Valor Objetivo Sector (Fijo) | Veredicto Relativo |
 | :--- | :--- | :--- | :--- | :--- |
 | **PER** | [Insertar Valor PER LTM] | [Insertar Valor PER NTM] | [Insertar PER Objetivo del sector] | [Conclusión] |
@@ -156,7 +154,6 @@ El objetivo es estimar el **valor intrínseco** (el valor real del negocio) para
 
 2.  **Tabla de Margen de Seguridad:**
     * Crea la siguiente tabla para el resumen final de la valoración, con **formato estilizado y profesional.**
-
 | Indicador | Valor |
 | :--- | :--- |
 | **Precio Actual (${assetData.ticker})** | ${assetData.regularMarketPrice} |

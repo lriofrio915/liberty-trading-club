@@ -2,7 +2,6 @@
 "use client";
 
 import { ApiAssetItem } from "@/types/api";
-import DataListItem from "../Shared/DataListItem";
 import NetIncomeChart from "../NetIncomeChart/NetIncomeChart";
 import TotalRevenueChart from "../TotalRevenueChart/TotalRevenueChart";
 
@@ -32,66 +31,6 @@ export default function CompanyOverview({ assetData }: CompanyOverviewProps) {
       </h2>
 
       <div className="flex flex-col gap-8">
-        {/* Fila 1: Descripción de la empresa (ocupa todo el ancho) */}
-        <div>
-          <h3 className="text-2xl font-semibold text-[#0A2342] mb-4">
-            Acerca de {companyName}
-          </h3>
-
-          {assetProfile?.longBusinessSummary ? (
-            <p className="text-gray-700 leading-relaxed mb-4">
-              <span className="font-semibold">Descripción:</span>{" "}
-              <span className="highlight-api">
-                {assetProfile.longBusinessSummary}
-              </span>
-            </p>
-          ) : null}
-
-          <ul className="list-disc list-inside text-gray-700 space-y-2">
-            <DataListItem
-              label="Sector"
-              value={assetProfile?.sector}
-              format="text"
-            />
-            <DataListItem
-              label="Industria"
-              value={assetProfile?.industry}
-              format="text"
-            />
-            {assetProfile?.website && (
-              <li>
-                <span className="font-semibold">Sitio Web:</span>{" "}
-                <a
-                  href={assetProfile.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline highlight-api"
-                >
-                  {assetProfile.website}
-                </a>
-              </li>
-            )}
-            <DataListItem
-              label="Empleados a tiempo completo"
-              value={assetProfile?.fullTimeEmployees}
-              format="number"
-            />
-            {(assetProfile?.address1 ||
-              assetProfile?.city ||
-              assetProfile?.country) && (
-              <li>
-                <span className="font-semibold">Ubicación:</span>{" "}
-                <span className="highlight-api">{`${
-                  assetProfile?.address1 || ""
-                }, ${assetProfile?.city || ""}, ${
-                  assetProfile?.country || ""
-                }`}</span>
-              </li>
-            )}
-          </ul>
-        </div>
-
-        {/* Fila 2: Gráficos en dos columnas */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
             <TotalRevenueChart assetData={assetData} />
