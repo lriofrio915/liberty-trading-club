@@ -310,6 +310,12 @@ export interface QuoteSummaryResult {
 
 // Interfaz para la estructura esperada del dato de un activo de la API
 export interface ApiAssetItem {
+  earningsGrowth: any;
+  sector: any;
+  industry: any;
+  trailingPE: any;
+  forwardPE: any;
+  regularMarketPrice: any;
   ticker: string;
   data: QuoteSummaryResult;
 }

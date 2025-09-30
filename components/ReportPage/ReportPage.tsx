@@ -178,34 +178,9 @@ export default function ReportPage({ ticker }: ReportPageProps) {
         </header>
 
         <ScrollToTopButton />
-
-        <ValuationDashboard
-          ticker={ticker}
-          apiData={assetData.data}
-          valuationMultiples={valuationMultiples}
-          loadingMultiples={loading}
-          financialAverages={financialAverages}
-          estimates={estimates}
-          setEstimates={setEstimates}
-          targets={targets}
-          setTargets={setTargets}
-          handleCalculation={handleCalculation}
-          isCalculating={isCalculating}
-          valuationResults={valuationResults}
-          marginOfSafety={marginOfSafety}
-          cagr={cagr}
-        />
-
         <CompanyOverview assetData={assetData} />
-        <MarketAnalysis assetData={assetData} />
         <PerformanceChart assetData={assetData} />
-        <DividendsSection assetData={assetData} />
-        <FinancialHealth assetData={assetData} />
-        <Profitability assetData={assetData} />
-        <AnalystPerspectives assetData={assetData} />
-        <Conclusion assetData={assetData} />
         <GeminiAnalysis assetData={assetData} />
-
         <footer className="text-center mt-12 pt-8 border-t border-gray-200">
           <h3 className="font-bold mb-2 text-[#0A2342]">Aviso Legal</h3>
           <p className="text-xs text-[#849E8F] max-w-4xl mx-auto">
