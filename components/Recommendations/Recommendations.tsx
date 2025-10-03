@@ -35,10 +35,11 @@ interface NewRecommendationFormProps {
 
 // --- Tipo de Retorno para acciones de CRUD (implícito en tu código) ---
 interface ActionResponse {
-  success?: boolean;
-  error?: string;
-  updated?: number; // Usado por refreshRecommendationPrices
+    success?: boolean;
+    error?: string;
+    updated?: number; // Usado por refreshRecommendationPrices
 }
+
 
 // --- SUB-COMPONENTE FORMULARIO ---
 function NewRecommendationForm({
@@ -75,7 +76,7 @@ function NewRecommendationForm({
       setError(null);
       // FIX: Tipamos la respuesta como ActionResponse
       const result: ActionResponse = await createRecommendation(data);
-
+      
       // Corregida la verificación de error
       if (result.error) {
         setError(result.error);
@@ -149,10 +150,7 @@ export default function Recommendations({
 
     startTransition(async () => {
       // FIX: Tipamos la respuesta como ActionResponse
-      const result: ActionResponse = await updateRecommendationStatus(
-        id,
-        newStatus
-      );
+      const result: ActionResponse = await updateRecommendationStatus(id, newStatus);
       setPendingUpdateIds((prev) => prev.filter((pid) => pid !== id));
 
       if (result.error) {
@@ -187,8 +185,7 @@ export default function Recommendations({
       try {
         // FIX: La Server Action lanza un error en caso de fallo, por eso la envolvemos en try/catch.
         await refreshRecommendationPrices();
-      } catch (e: unknown) {
-        // FIX: Reemplazamos any por unknown
+      } catch (e: unknown) { // FIX: Reemplazamos any por unknown
         const err = e as Error;
         alert(err.message || "Error al actualizar precios.");
       }

@@ -184,6 +184,8 @@ const sp500Tickers = [
   "FCX",
 ];
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // --- ACCIONES DE MERCADO (MOVERS) ---
 
 export async function getDayMovers(): Promise<{
@@ -192,17 +194,52 @@ export async function getDayMovers(): Promise<{
   error: string | null;
 }> {
   try {
-    const [gainers, losers] = await Promise.all([
-      yahooFinance.screener({ count: 10, scrIds: "day_gainers" }),
-      yahooFinance.screener({ count: 10, scrIds: "day_losers" }),
-    ]);
-    return {
-      gainers: gainers.quotes as MoverQuote[],
-      losers: losers.quotes as MoverQuote[],
-      error: null,
-    };
+    // 1. Obtener datos de cotización en tiempo real para todos los tickers
+    const quotePromises = sp500Tickers.map((ticker) =>
+      yahooFinance.quote(ticker)
+    );
+    const results = await Promise.allSettled(quotePromises);
+
+    const dailyPerformances: MoverQuote[] = results
+      .map((result, index) => {
+        if (
+          result.status !== "fulfilled" ||
+          !result.value ||
+          !result.value.regularMarketPrice ||
+          !result.value.regularMarketPreviousClose
+        ) {
+          return null;
+        }
+
+        const { regularMarketPrice, regularMarketPreviousClose } = result.value; // 2. Calcular el cambio porcentual diario (Precio Actual vs Cierre Anterior)
+
+        const dailyChange =
+          ((regularMarketPrice - regularMarketPreviousClose) /
+            regularMarketPreviousClose) *
+          100;
+
+        // 3. Formatear como MoverQuote
+        return {
+          symbol: sp500Tickers[index],
+          regularMarketChangePercent: dailyChange,
+          regularMarketPrice: regularMarketPrice,
+          longName: result.value.longName || undefined,
+        } as MoverQuote;
+      })
+      .filter((item): item is MoverQuote => item !== null); // 4. Clasificar y ordenar
+
+    dailyPerformances.sort(
+      (a, b) =>
+        (b.regularMarketChangePercent ?? 0) -
+        (a.regularMarketChangePercent ?? 0)
+    );
+
+    const gainers = dailyPerformances.slice(0, 10);
+    const losers = dailyPerformances.slice(-10).reverse();
+
+    return { gainers, losers, error: null };
   } catch (error) {
-    console.error("Error al obtener movers del día:", error);
+    console.error("Error al obtener movers del día (cálculo):", error);
     return {
       gainers: [],
       losers: [],
@@ -265,7 +302,7 @@ export async function getYtdMovers(): Promise<{
   }
 }
 
-// --- ACCIONES CRUD PARA RECOMENDACIONES ---
+// --- ACCIONES CRUD PARA RECOMENDACIONES (sin cambios relevantes en la lógica central) ---
 
 export async function createRecommendation(data: NewRecommendationData) {
   try {
@@ -278,11 +315,8 @@ export async function createRecommendation(data: NewRecommendationData) {
       throw new Error(`Ticker "${data.ticker}" no válido o sin precio.`);
     }
 
-    // FIX: El modelo requiere portfolioSlug. Si no lo pasas, usa un valor por defecto seguro.
-    // Asumo que tu NewRecommendationData ya incluye portfolioSlug. Si no, necesitarías modificar esa interfaz.
     const newRecommendation = new Recommendation({
       ...data,
-      // Los campos sellPrice y portfolioSlug deben estar en data si son requeridos por el modelo
       assetName: quote.longName || data.ticker,
       currentPrice: quote.regularMarketPrice,
     });
@@ -309,7 +343,6 @@ export async function getRecommendations(): Promise<ClientRecommendation[]> {
     return JSON.parse(JSON.stringify(recommendations));
   } catch (error) {
     console.error("Error fetching recommendations:", error);
-    // Devolvemos un array vacío para no romper la UI.
     return [];
   }
 }
@@ -320,7 +353,6 @@ export async function updateRecommendationStatus(
 ) {
   try {
     await dbConnect();
-    // Usamos findById para obtener el documento Mongoose
     const recommendation = await Recommendation.findById(id);
     if (!recommendation) throw new Error("Recomendación no encontrada.");
 
